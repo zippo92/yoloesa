@@ -103,5 +103,5 @@ venv.bak/
 # mypy
 .mypy_cache/
 .idea/
-/eurosatTS/Dataset /
+/eurosatTS/Dataset
 /eurosatTS/eurosatDb.tfrecord
