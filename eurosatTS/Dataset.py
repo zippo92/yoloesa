@@ -5,35 +5,35 @@ import tensorflow as tf
 
 class Dataset():
 
-    path = None
-    dataset = None
 
     def __init__(self, root_dir):
-        self.path = root_dir
+        self._tfRecordpPath = root_dir
+        self.dataset = tf.data.TFRecordDataset(self._tfRecordpPath)
 
-    def createDataset(self):
-        self.dataset = tf.data.TFRecordDataset(self.path)
-        self.dataset = self.dataset.map(self.parseTFRecord)
-        #self.dataset = self.dataset.batch(1)
+    def build(self, height = 128, width = 128, batch_size = 12, num_epoch = 1, shuffle = 1800*12, num_parallel_calls = 4):
 
-        # self.dataset = self.dataset.map(self.parse_function, num_parallel_calls=4)
-        # self.dataset = self.dataset.shuffle(len(self.x))
-        # self.dataset = self.dataset.map(self.parse_function, num_parallel_calls=4)
-        #self.dataset = self.dataset.batch(2)
-        # self.dataset = self.dataset.prefetch(1)
-        #
+        self._height = height
+        self._width = width
+        self._batch_size = batch_size
+        self._num_epoch = num_epoch
+        self._shuffle = shuffle
 
-        # # step 4: create iterator and final input tensor
-        iterator = tf.data.Iterator.from_structure(self.dataset.output_types, self.dataset.output_shapes)
-        images, labels = iterator.get_next()
-        init = iterator.make_initializer(self.dataset)
-        with tf.Session() as sess:
-            sess.run(init)
-            _img, _label = sess.run([images, labels])
-            print _img.shape
+        self.dataset = self.dataset.shuffle(self._shuffle)
+        self.dataset = self.dataset.map(self.parseTFRecord, num_parallel_calls)
+        self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
+        self.dataset = self.dataset.repeat(self._num_epoch)
+
+        self.iterator = tf.data.Iterator.from_structure(self.dataset.output_types, self.dataset.output_shapes)
+
+    def init(self):
+        return self.iterator.make_initializer(self.dataset)
+
+
+    def get_next(self):
+        return self.iterator.get_next()
 
     def __len__(self):
-        return sum(1 for _ in tf.python_io.tf_record_iterator(self.path))
+        return sum(1 for _ in tf.python_io.tf_record_iterator(self._tfRecordpPath))
 
 
     def parseTFRecord(self, example):
@@ -43,11 +43,13 @@ class Dataset():
 
         parsed = tf.parse_single_example(example, features=read_features)
 
-        img = tf.decode_raw(parsed['image'], tf.float16)
+        img = tf.decode_raw(parsed['image'], tf.float32)
         label = parsed['label']
 
         img = tf.reshape(img, [64, 64,3])
 
+        img = tf.image.resize_images(img, [448, 448])
 
-        return img,label
+        label_ohe = tf.one_hot(label, 10)
 
+        return img,label, label_ohe
