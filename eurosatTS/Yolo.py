@@ -5,7 +5,7 @@ class Yolo():
 
     def __init__(self):
         pass
-    def inference(self, images, mode):
+    def inference(self, images):
         import ConfigParser
 
         config = ConfigParser.ConfigParser()
@@ -38,13 +38,13 @@ class Yolo():
 
             if layer.startswith("Fully"):
                 units = int(config.get(layer, "units"))
-                dropOutRate = int(config.get(layer, "dropOutRate"))
+                dropOutRate = float(config.get(layer, "dropOutRate"))
                 predicts = self.dense(predicts, units, dropOutRate)
 
 
-            logits = tf.nn.softmax(predicts)
+        logits = tf.nn.softmax(predicts)
 
-            return predicts, logits
+        return predicts, logits
 
 
     def conv2d(self, input, kernel_size,filters, stride):
@@ -81,17 +81,21 @@ class Yolo():
         """
         return tf.layers.max_pooling2d(inputs=input, pool_size=kernel_size, strides=strides)
 
-    def dense(self, input, units, dropoutrate,mode):
+    def dense(self, input, units, dropoutrate):
 
-        reshape = tf.reshape(input, [tf.shape(input)[0], -1])
-        dense = tf.layers.dense(inputs=reshape, units=units, activation=tf.nn.relu)
+
+        shape = input.get_shape().as_list()
+        if(len(shape) == 4):
+            input = tf.reshape(input, [shape[0], shape[1]*shape[2]*shape[3]])
+        dense = tf.layers.dense(inputs=input, units=units, activation=tf.nn.relu)
 
         dropout = tf.layers.dropout(
-            inputs=dense, rate=dropoutrate, training=mode == tf.estimator.ModeKeys.TRAIN)
+            inputs=dense, rate=dropoutrate, training=True)
         return dropout
 
 
     def loss(self, predicts, labelsohe):
+        print(predicts.get_shape())
         return tf.losses.softmax_cross_entropy(onehot_labels= labelsohe, logits=predicts)
 
     def construct_graph(self):

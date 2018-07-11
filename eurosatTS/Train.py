@@ -40,7 +40,7 @@ class YoloSolver():
         # self.labels = tf.placeholder(tf.float32, (self.batch_size, 10)) # TODO verificare
 
         self.images, self.labels, self.labelsohe = self.dataset.get_next()
-        self.predicts, self.logits = self.yolo.inference(self.images, mode = True)
+        self.predicts, self.logits = self.yolo.inference(self.images)
         self.total_loss = self.yolo.loss(self.logits, self.labelsohe)
 
         tf.summary.scalar('loss', self.total_loss)
@@ -58,7 +58,7 @@ class YoloSolver():
               train_op: op for training
             """
             config = ConfigParser.ConfigParser()
-            config.read("../config/conf.cfg")
+            config.read("config/conf.cfg")
 
             learning_rate = config.get("Common Params", "learning_rate")
             moment = config.get("Common Params", "moment")
