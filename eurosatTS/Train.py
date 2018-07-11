@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import os
 import ConfigParser
 
-from .yoloNet.Yolo import Yolo
+from Yolo import Yolo
+
 
 class YoloSolver():
 
@@ -12,15 +13,15 @@ class YoloSolver():
         self.dataset = Dataset("eurosatDb.tfrecord")
 
         self.config = ConfigParser.ConfigParser()
-        self.config.read("../config/conf.cfg")
+        self.config.read("config/conf.cfg")
 
-        self.height = self.config.get("Common Params", "height")
-        self.width = self.config.get("Common Params", "width")
-        self.batch_size = self.config.get("Common Params", "batch_size")
-        self.num_epoch = self.config.get("Common Params", "num_epoch")
-        self.shuffle = self.config.get("Common Params", "shuffle")
-        self.train_dir = self.config.get("Common Params", "train_dir")
-        self.max_iterations = self.config.get("Common Params", "max_iterations")
+        self.height = int(self.config.get("Common Params", "height"))
+        self.width = int(self.config.get("Common Params", "width"))
+        self.batch_size = int(self.config.get("Common Params", "batch_size"))
+        self.num_epoch = int(self.config.get("Common Params", "num_epoch"))
+        self.shuffle = int(self.config.get("Common Params", "shuffle"))
+        self.train_dir = int(self.config.get("Common Params", "train_dir"))
+        self.max_iterations = int(self.config.get("Common Params", "max_iterations"))
 
         self.dataset.build(height=self.height, width=self.width, batch_size=self.batch_size, num_epoch=self.num_epoch, shuffle=self.shuffle)
 

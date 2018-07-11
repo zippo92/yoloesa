@@ -15,31 +15,31 @@ class Yolo():
         for layer in config.sections():
 
             if layer.startswith("Conv"):
-                kernel = config.get(layer, "kernel_size")
-                filters = config.get(layer, "filters")
-                stride = config.get(layer, "stride")
+                kernel = tuple(config.get(layer, "kernel_size"))
+                filters = int(config.get(layer, "filters"))
+                stride = int(config.get(layer, "stride"))
                 predicts = self.conv2d(predicts,kernel,filters,stride)
 
             if layer.startswith("MaxPool"):
-                kernel = config.get(layer, "kernel_size")
-                stride = config.get(layer, "stride")
+                kernel = tuple(config.get(layer, "kernel_size"))
+                stride = int(config.get(layer, "stride"))
                 predicts = self.max_pool(predicts,kernel,stride)
 
             if layer.startswith("DoubleConv"):
-                kernel_1 = config.get(layer, "kernel_size_1")
-                filters_1 = config.get(layer, "filters_1")
-                stride_1 = config.get(layer, "stride_1")
-                kernel_2 = config.get(layer, "kernel_size_2")
-                filters_2 = config.get(layer, "filters_2")
-                stride_2 = config.get(layer, "stride_2")
+                kernel_1 = tuple(config.get(layer, "kernel_size_1"))
+                filters_1 = int(config.get(layer, "filters_1"))
+                stride_1 = int(config.get(layer, "stride_1"))
+                kernel_2 = tuple(config.get(layer, "kernel_size_2"))
+                filters_2 = int(config.get(layer, "filters_2"))
+                stride_2 = int(config.get(layer, "stride_2"))
 
                 for i in range(config.getint(layer, "repeat")):
                     predicts = self.conv2d(predicts, kernel_1, filters_1, stride_1)
                     predicts = self.conv2d(predicts,kernel_2,filters_2,stride_2)
 
             if layer.startswith("Fully"):
-                units = config.get(layer, "units")
-                dropOutRate = config.get(layer, "dropOutRate")
+                units = int(config.get(layer, "units"))
+                dropOutRate = int(config.get(layer, "dropOutRate"))
                 predicts = self.dense(predicts, units, dropOutRate)
 
 
@@ -108,48 +108,6 @@ class Yolo():
         tf.summary.scalar('loss', self.total_loss)
         self.train_op = self._train()
 
-
-
-if __name__ == '__main__':
-    import ConfigParser
-
-    config = ConfigParser.ConfigParser()
-    config.read("../config/layers.cfg")
-
-    for layer in config.sections():
-
-        if layer.startswith("Conv"):
-            print layer
-            kernel = config.get(layer, "kernel_size")
-            filters = config.get(layer, "filters")
-            stride = config.get(layer, "stride")
-            print kernel
-            print filters
-            print stride
-        if layer.startswith("MaxPool"):
-            print layer
-            kernel = config.get(layer, "kernel_size")
-            stride = config.get(layer, "stride")
-        if layer.startswith("DoubleConv"):
-            kernel_1 = config.get(layer, "kernel_size_1")
-            filters_1 = config.get(layer, "filters_1")
-            stride_1 = config.get(layer, "stride_1")
-            kernel_2 = config.get(layer, "kernel_size_2")
-            filters_2 = config.get(layer, "filters_2")
-            stride_2 = config.get(layer, "stride_2")
-            for i in range(config.getint(layer, "repeat")):
-                print i
-                print kernel_1
-                print filters_1
-                print stride_1
-                print kernel_2
-                print filters_2
-                print stride_2
-        if layer.startswith("Fully"):
-            units = config.get(layer, "units")
-            dropOutRate = config.get(layer, "dropOutRate")
-            print units
-            print dropOutRate
 
 
 
