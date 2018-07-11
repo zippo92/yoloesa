@@ -42,20 +42,10 @@ class Yolo():
                 dropOutRate = config.get(layer, "dropOutRate")
                 predicts = self.dense(predicts, units, dropOutRate)
 
-    #    TODO MANCA ULTIMO STRATO
 
-        # # Logits Layer
-        # logits = tf.layers.dense(inputs=dropout, units=10)
-        #
-        # predictions = {
-        #     # Generate predictions (for PREDICT and EVAL mode)
-        #     "classes": tf.argmax(input=logits, axis=1),
-        #     # Add `softmax_tensor` to the graph. It is used for PREDICT and by the
-        #     # `logging_hook`.
-        #     "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
-        # }
+            logits = tf.nn.softmax(predicts)
 
-        return predicts
+            return predicts, logits
 
 
     def conv2d(self, input, kernel_size,filters, stride):
@@ -102,8 +92,8 @@ class Yolo():
         return dropout
 
 
-    def loss(self, predicts, labels):
-        return tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=predicts)
+    def loss(self, predicts, labelsohe):
+        return tf.losses.softmax_cross_entropy(onehot_labels= labelsohe, logits=predicts)
 
     def construct_graph(self):
         # construct graph

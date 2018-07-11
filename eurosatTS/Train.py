@@ -26,6 +26,7 @@ class YoloSolver():
 
         print(len(self.dataset) / 12)
 
+        self.construct_graph()
         self.yolo = Yolo()
 
 
@@ -34,11 +35,13 @@ class YoloSolver():
 
         # construct graph
         self.global_step = tf.Variable(0, trainable=False)
-        self.images = tf.placeholder(tf.float32, (self.batch_size, self.height, self.width, 3))
-        self.labels = tf.placeholder(tf.float32, (self.batch_size, 10)) # TODO verificare
+        # self.images = tf.placeholder(tf.float32, (self.batch_size, self.height, self.width, 3))
+        # self.labels = tf.placeholder(tf.float32, (self.batch_size, 10)) # TODO verificare
 
-        self.predicts = self.yolo.inference(self.images, mode=tf.estimator.ModeKeys.TRAIN)
-        self.total_loss = self.yolo.loss(self.predicts, self.labels)
+        self.images, self.labels, self.labelsohe = self.dataset.get_next()
+
+        self.predicts, self.logits = self.yolo.inference(self.images, mode=tf.estimator.ModeKeys.TRAIN)
+        self.total_loss = self.yolo.loss(self.logits, self.labelsohe)
 
         tf.summary.scalar('loss', self.total_loss)
         self.train_op = self._train()
@@ -70,6 +73,8 @@ class YoloSolver():
     def solve(self):
         init = tf.global_variables_initializer()
 
+        self.initDataset = self.dataset.init()
+
         summary_op = tf.summary.merge_all()
 
         sess = tf.Session()
@@ -82,33 +87,11 @@ class YoloSolver():
             # start_time = time.time()
             np_images, np_labels = self.dataset.get_next()
 
-            _, loss_value = sess.run([self.train_op, self.total_loss],
-                                             feed_dict={self.images: np_images, self.labels: np_labels})
+            _, loss_value,_summaryop = sess.run([self.train_op, self.total_loss, summary_op])
 
-        #     if step % 10 == 0:
-        #         num_examples_per_step = self.dataset.batch_size
-        #         examples_per_sec = num_examples_per_step / duration
-        #         sec_per_batch = float(duration)
-        #
-        #         format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
-        #                       'sec/batch)')
-        #         print (format_str % (datetime.now(), step, loss_value,
-        #                              examples_per_sec, sec_per_batch))
-        #
-        #         sys.stdout.flush()
-        #     if step % 100 == 0:
-        #         summary_str = sess.run(summary_op, feed_dict={self.images: np_images, self.labels: np_labels,
-        #                                                       self.objects_num: np_objects_num})
-        #         summary_writer.add_summary(summary_str, step)
+            print(step, loss_value)
+            summary_writer.add_summary(_summaryop,step)
 
-            # duration = time.time() - start_time
-
-        # images, labels, labels_ohe = self.dataset.get_next()
-        # with tf.Session() as sess:
-        #     sess.run(self.dataset.init())
-        #     for i in range(100):
-        #         _img, _label, _label_ohe = sess.run([images, labels, labels_ohe])
-        #         print(_label[7], _label_ohe[7])
 def main(argv=None):
     yolosolver = YoloSolver()
     yolosolver.solve()
