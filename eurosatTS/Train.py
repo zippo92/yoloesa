@@ -48,23 +48,23 @@ class YoloSolver():
 
 
     def _train(self):
-            """Train model
-            Create an optimizer and apply to all trainable variables.
-            Args:
-              total_loss: Total loss from net.loss()
-              global_step: Integer Variable counting the number of training steps
-              processed
-            Returns:
-              train_op: op for training
-            """
-            config = ConfigParser.ConfigParser()
-            config.read("config/conf.cfg")
+        """Train model
+        Create an optimizer and apply to all trainable variables.
+        Args:
+          total_loss: Total loss from net.loss()
+          global_step: Integer Variable counting the number of training steps
+          processed
+        Returns:
+          train_op: op for training
+        """
+        config = ConfigParser.ConfigParser()
+        config.read("config/conf.cfg")
 
-            learning_rate =float(config.get("Common Params", "learning_rate"))
-            moment = float(config.get("Common Params", "moment"))
-            opt = tf.train.AdamOptimizer(learning_rate)
-            train_step = opt .minimize(self.total_loss)
-	    return train_step
+        learning_rate =float(config.get("Common Params", "learning_rate"))
+        moment = float(config.get("Common Params", "moment"))
+        opt = tf.train.AdamOptimizer(learning_rate)
+        train_step = opt .minimize(self.total_loss)
+        return train_step
 
             # grads = opt.compute_gradients(self.total_loss)
 	
@@ -83,7 +83,7 @@ class YoloSolver():
         sess = tf.Session()
 
         sess.run(init)
-	sess.run(initDataset)	
+        sess.run(initDataset)
 
         summary_writer = tf.summary.FileWriter(self.train_dir, sess.graph)
 
