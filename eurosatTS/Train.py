@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import ConfigParser
 
-from eurosatTS.yoloNet.Yolo import Yolo
+from .yoloNet.Yolo import Yolo
 
 class YoloSolver():
 
