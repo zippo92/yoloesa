@@ -60,8 +60,8 @@ class YoloSolver():
             config = ConfigParser.ConfigParser()
             config.read("config/conf.cfg")
 
-            learning_rate = config.get("Common Params", "learning_rate")
-            moment = config.get("Common Params", "moment")
+            learning_rate =float(config.get("Common Params", "learning_rate"))
+            moment = float(config.get("Common Params", "moment"))
             opt = tf.train.MomentumOptimizer(learning_rate, moment)
             grads = opt.compute_gradients(self.total_loss)
 
@@ -73,19 +73,20 @@ class YoloSolver():
     def solve(self):
         init = tf.global_variables_initializer()
 
-        self.initDataset = self.dataset.init()
+        initDataset = self.dataset.init()
 
         summary_op = tf.summary.merge_all()
 
         sess = tf.Session()
 
         sess.run(init)
+	sess.run(initDataset)	
 
         summary_writer = tf.summary.FileWriter(self.train_dir, sess.graph)
 
-        for step in xrange(self.max_iterators):
+        for step in xrange(self.max_iterations):
             # start_time = time.time()
-            np_images, np_labels = self.dataset.get_next()
+            np_images, np_labels, np_labelsohe = self.dataset.get_next()
 
             _, loss_value,_summaryop = sess.run([self.train_op, self.total_loss, summary_op])
 
