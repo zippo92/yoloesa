@@ -48,7 +48,7 @@ class Dataset():
 
         img = tf.reshape(img, [64, 64,3])
 
-        img = tf.image.resize_images(img, [448, 448])
+        img = tf.image.resize_images(img, [320, 320])
 
         label_ohe = tf.one_hot(label, 10)
 

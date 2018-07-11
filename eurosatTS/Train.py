@@ -62,12 +62,15 @@ class YoloSolver():
 
             learning_rate =float(config.get("Common Params", "learning_rate"))
             moment = float(config.get("Common Params", "moment"))
-            opt = tf.train.MomentumOptimizer(learning_rate, moment)
-            grads = opt.compute_gradients(self.total_loss)
+            opt = tf.train.AdamOptimizer(learning_rate)
+            train_step = opt .minimize(self.total_loss)
+	    return train_step
 
-            apply_gradient_op = opt.apply_gradients(grads, global_step=self.global_step)
+            # grads = opt.compute_gradients(self.total_loss)
+	
+            # apply_gradient_op = opt.apply_gradients(grads, global_step=self.global_step)
 
-            return apply_gradient_op
+            #return apply_gradient_op
 
 
     def solve(self):
@@ -86,7 +89,7 @@ class YoloSolver():
 
         for step in xrange(self.max_iterations):
             # start_time = time.time()
-            np_images, np_labels, np_labelsohe = self.dataset.get_next()
+            #np_images, np_labels, np_labelsohe = self.dataset.get_next()
 
             _, loss_value,_summaryop = sess.run([self.train_op, self.total_loss, summary_op])
 
