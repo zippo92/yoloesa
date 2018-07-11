@@ -4,32 +4,31 @@ import tensorflow as tf
 class Yolo():
 
     def __init__(self):
-        return
-
+        pass
     def inference(self, images, mode):
         import ConfigParser
 
         config = ConfigParser.ConfigParser()
-        config.read("../config/layers.cfg")
+        config.read("config/layers.cfg")
         predicts = images
         for layer in config.sections():
 
             if layer.startswith("Conv"):
-                kernel = tuple(config.get(layer, "kernel_size"))
+                kernel = int(config.get(layer, "kernel_size"))
                 filters = int(config.get(layer, "filters"))
                 stride = int(config.get(layer, "stride"))
                 predicts = self.conv2d(predicts,kernel,filters,stride)
 
             if layer.startswith("MaxPool"):
-                kernel = tuple(config.get(layer, "kernel_size"))
+                kernel = int(config.get(layer, "kernel_size"))
                 stride = int(config.get(layer, "stride"))
                 predicts = self.max_pool(predicts,kernel,stride)
 
             if layer.startswith("DoubleConv"):
-                kernel_1 = tuple(config.get(layer, "kernel_size_1"))
+                kernel_1 = int(config.get(layer, "kernel_size_1"))
                 filters_1 = int(config.get(layer, "filters_1"))
                 stride_1 = int(config.get(layer, "stride_1"))
-                kernel_2 = tuple(config.get(layer, "kernel_size_2"))
+                kernel_2 = int(config.get(layer, "kernel_size_2"))
                 filters_2 = int(config.get(layer, "filters_2"))
                 stride_2 = int(config.get(layer, "stride_2"))
 

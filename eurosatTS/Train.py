@@ -20,15 +20,15 @@ class YoloSolver():
         self.batch_size = int(self.config.get("Common Params", "batch_size"))
         self.num_epoch = int(self.config.get("Common Params", "num_epoch"))
         self.shuffle = int(self.config.get("Common Params", "shuffle"))
-        self.train_dir = int(self.config.get("Common Params", "train_dir"))
+        self.train_dir = self.config.get("Common Params", "train_dir")
         self.max_iterations = int(self.config.get("Common Params", "max_iterations"))
 
         self.dataset.build(height=self.height, width=self.width, batch_size=self.batch_size, num_epoch=self.num_epoch, shuffle=self.shuffle)
 
         print(len(self.dataset) / 12)
 
-        self.construct_graph()
         self.yolo = Yolo()
+        self.construct_graph()
 
 
 
@@ -40,8 +40,7 @@ class YoloSolver():
         # self.labels = tf.placeholder(tf.float32, (self.batch_size, 10)) # TODO verificare
 
         self.images, self.labels, self.labelsohe = self.dataset.get_next()
-
-        self.predicts, self.logits = self.yolo.inference(self.images, mode=tf.estimator.ModeKeys.TRAIN)
+        self.predicts, self.logits = self.yolo.inference(self.images, mode = True)
         self.total_loss = self.yolo.loss(self.logits, self.labelsohe)
 
         tf.summary.scalar('loss', self.total_loss)
