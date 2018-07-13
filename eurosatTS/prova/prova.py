@@ -63,7 +63,7 @@ max5 = tf.layers.max_pooling2d(inputs=activation13, pool_size=2, strides=2)
 
 flat = tf.layers.flatten(max5)
 
-dense1 = tf.layers.dense(inputs=flat, units=4096)
+dense1 = tf.layers.dense(inputs=flat, units=128)
 
 activation14 = tf.nn.relu(dense1)
 
