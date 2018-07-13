@@ -9,7 +9,7 @@ class Yolo():
         import ConfigParser
 
         config = ConfigParser.ConfigParser()
-        config.read("config/yolotiny.cfg")
+        config.read("config/vgg16.cfg")
         predicts = images
         for layer in config.sections():
 
@@ -40,7 +40,7 @@ class Yolo():
                 units = int(config.get(layer, "units"))
                 dropOutRate = float(config.get(layer, "dropOutRate"))
                 activation = config.get(layer, "activation")
-                predicts = self.dense(predicts, units, dropOutRate, activation)        
+                predicts = self.dense(predicts, units, dropOutRate, activation)
 
         logits = tf.nn.softmax(predicts)
 
@@ -64,7 +64,7 @@ class Yolo():
             filters=filters,
             kernel_size=kernel_size,
             padding="same",
-            activation=tf.nn.leaky_relu,
+            activation=tf.nn.relu,
             strides = stride,
         )
 
