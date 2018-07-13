@@ -10,7 +10,7 @@ class Dataset():
         self._tfRecordpPath = root_dir
         self.dataset = tf.data.TFRecordDataset(self._tfRecordpPath)
 
-    def build(self, height = 128, width = 128, batch_size = 12, num_epoch = 1, shuffle = 1800*12, num_parallel_calls = 4):
+    def build(self, height = 128, width = 128, batch_size = 12, num_epoch = 1, shuffle = 18000, num_parallel_calls = 4):
 
         self._height = height
         self._width = width

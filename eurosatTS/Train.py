@@ -41,8 +41,7 @@ class YoloSolver():
 
         self.images, self.labels, self.labelsohe = self.dataset.get_next()
         self.predicts, self.logits = self.yolo.inference(self.images)
-        self.total_loss = self.yolo.loss(self.predicts, self.labelsohe)
-	print(self.total_loss.get_shape())
+        self.total_loss = self.yolo.loss(self.logits, self.labelsohe)
         tf.summary.scalar('loss', self.total_loss)
         self.train_op = self._train()
 
@@ -67,7 +66,7 @@ class YoloSolver():
         return train_step
 
             # grads = opt.compute_gradients(self.total_loss)
-	
+
             # apply_gradient_op = opt.apply_gradients(grads, global_step=self.global_step)
 
             #return apply_gradient_op

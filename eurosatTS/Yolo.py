@@ -39,10 +39,9 @@ class Yolo():
             if layer.startswith("Fully"):
                 units = int(config.get(layer, "units"))
                 dropOutRate = float(config.get(layer, "dropOutRate"))
-		activation = config.get(layer,"activation")
-                predicts = self.dense(predicts, units, dropOutRate)
+                activation = config.get(layer, "activation")
+                predicts = self.dense(predicts, units, dropOutRate, activation)        
 
-		 
         logits = tf.nn.softmax(predicts)
 
         return predicts, logits
@@ -89,34 +88,15 @@ class Yolo():
         if(len(shape) == 4):
             input = tf.reshape(input, [shape[0], shape[1]*shape[2]*shape[3]])
         if activation == "relu":
-	    dense = tf.layers.dense(inputs=input, units=units, activation=tf.nn.leaky_relu)
-	else
+            dense = tf.layers.dense(inputs=input, units=units, activation=tf.nn.leaky_relu)
+        else:
             dense = tf.layers.dense(inputs=input, units=units)
 
- 
-       # dropout = tf.layers.dropout(
+
+        # dropout = tf.layers.dropout(
         #    inputs=dense, rate=dropoutrate, training=True)
         return dense
 
 
     def loss(self, predicts, labelsohe):
-        print(predicts.get_shape())
-        return tf.losses.softmax_cross_entropy(onehot_labels= labelsohe, logits=predicts)
-
-    def construct_graph(self):
-        # construct graph
-        self.global_step = tf.Variable(0, trainable=False)
-        self.images = tf.placeholder(tf.float32, (self.batch_size, self.height, self.width, 3))
-        self.labels = tf.placeholder(tf.float32, (self.batch_size, self.max_objects, 5))
-        self.objects_num = tf.placeholder(tf.int32, (self.batch_size))
-
-        self.predicts = self.net.inference(self.images)
-        self.total_loss, self.nilboy = self.net.loss(self.predicts, self.labels, self.objects_num)
-
-        tf.summary.scalar('loss', self.total_loss)
-        self.train_op = self._train()
-
-
-
-
-
+        return tf.losses.softmax_cross_entropy(onehot_labels=labelsohe, logits=predicts)

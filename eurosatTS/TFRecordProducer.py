@@ -19,14 +19,13 @@ def parseFilenames(path):
             if fname.endswith(".tif"):
                 with rasterio.open(os.path.join(dirName, fname)) as src:
                     image = np.transpose(src.read([4,3,2]),[1,2,0])
-                    #print image.astype("float32")
                     imax = image.max()
                     imin =  image.min()
                     image = image.astype("float32")
                     image = (image -imin)/(imax-imin)
                     data.append((image, i))
-        i += 1
 
+        i += 1
     return data
 
 if __name__ == '__main__':
