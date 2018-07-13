@@ -86,14 +86,18 @@ class YoloSolver():
 
         summary_writer = tf.summary.FileWriter(self.train_dir, sess.graph)
 
-        for step in xrange(self.max_iterations):
+        for epoch in xrange(self.num_epoch):
             # start_time = time.time()
             #np_images, np_labels, np_labelsohe = self.dataset.get_next()
+            print("epoch:{}".format(epoch))
 
-            _, loss_value,_summaryop = sess.run([self.train_op, self.total_loss, summary_op])
+            progbar = tf.keras.utils.Progbar(len(self.dataset)/self.batch_size)
 
-            print(step, loss_value)
-            summary_writer.add_summary(_summaryop,step)
+            for step in range(len(self.dataset)/self.batch_size):
+
+                _, loss_value,_summaryop = sess.run([self.train_op, self.total_loss, summary_op])
+                progbar.update(step,[("loss",loss_value)])
+            summary_writer.add_summary(_summaryop,epoch)
 
 def main(argv=None):
     yolosolver = YoloSolver()
