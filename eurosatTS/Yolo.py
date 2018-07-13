@@ -39,9 +39,10 @@ class Yolo():
             if layer.startswith("Fully"):
                 units = int(config.get(layer, "units"))
                 dropOutRate = float(config.get(layer, "dropOutRate"))
+		activation = config.get(layer,"activation")
                 predicts = self.dense(predicts, units, dropOutRate)
 
-
+		 
         logits = tf.nn.softmax(predicts)
 
         return predicts, logits
@@ -64,7 +65,7 @@ class Yolo():
             filters=filters,
             kernel_size=kernel_size,
             padding="same",
-            activation=tf.nn.relu,
+            activation=tf.nn.leaky_relu,
             strides = stride,
         )
 
@@ -81,17 +82,21 @@ class Yolo():
         """
         return tf.layers.max_pooling2d(inputs=input, pool_size=kernel_size, strides=strides)
 
-    def dense(self, input, units, dropoutrate):
+    def dense(self, input, units, dropoutrate, activation):
 
 
         shape = input.get_shape().as_list()
         if(len(shape) == 4):
             input = tf.reshape(input, [shape[0], shape[1]*shape[2]*shape[3]])
-        dense = tf.layers.dense(inputs=input, units=units, activation=tf.nn.relu)
+        if activation == "relu":
+	    dense = tf.layers.dense(inputs=input, units=units, activation=tf.nn.leaky_relu)
+	else
+            dense = tf.layers.dense(inputs=input, units=units)
 
-        dropout = tf.layers.dropout(
-            inputs=dense, rate=dropoutrate, training=True)
-        return dropout
+ 
+       # dropout = tf.layers.dropout(
+        #    inputs=dense, rate=dropoutrate, training=True)
+        return dense
 
 
     def loss(self, predicts, labelsohe):

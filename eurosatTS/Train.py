@@ -41,8 +41,8 @@ class YoloSolver():
 
         self.images, self.labels, self.labelsohe = self.dataset.get_next()
         self.predicts, self.logits = self.yolo.inference(self.images)
-        self.total_loss = self.yolo.loss(self.logits, self.labelsohe)
-
+        self.total_loss = self.yolo.loss(self.predicts, self.labelsohe)
+	print(self.total_loss.get_shape())
         tf.summary.scalar('loss', self.total_loss)
         self.train_op = self._train()
 
@@ -63,7 +63,7 @@ class YoloSolver():
         learning_rate =float(config.get("Common Params", "learning_rate"))
         moment = float(config.get("Common Params", "moment"))
         opt = tf.train.AdamOptimizer(learning_rate)
-        train_step = opt .minimize(self.total_loss)
+        train_step = opt.minimize(self.total_loss)
         return train_step
 
             # grads = opt.compute_gradients(self.total_loss)
