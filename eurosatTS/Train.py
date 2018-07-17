@@ -74,8 +74,10 @@ class Train():
 
         val_summary = tf.summary.merge([val_loss_summ,val_acc_summ])
 
-        best_val_acc = 0;
+        best_val_acc = tf.constant(0)
         saver = tf.train.Saver()
+
+        cond = tf.cond(tf.less(best_val_acc,val_acc_op), tf.assign(best_val_acc,val_acc_op))
 
         print(len(self.trainDataset))
         init = tf.global_variables_initializer()
@@ -87,20 +89,21 @@ class Train():
             sess.run(self.trainDataset.init())
             sess.run(self.valDataset.init())
             for epoch in range(self.num_epoch):
-                print("Epoch:{}\n".format(epoch))
+                print("\nEpoch:{}\n".format(epoch))
                 train_progbar = tf.keras.utils.Progbar(self.train_batch_number)
                 for step in xrange(self.train_batch_number):
                     _, _train_loss,_,_tr_acc_op, _train_summary = sess.run([training_step,train_loss, train_acc, train_acc_op,train_summary])
                     train_progbar.update(step, [("tr_loss", _train_loss), ("tr_accuracy", _tr_acc_op)])
-                print("Validation start\n")
+                print("\nValidation start\n")
                 val_progbar = tf.keras.utils.Progbar(target=self.val_batch_number)
                 for step in xrange(self.val_batch_number):
-                    _val_loss,_,_val_acc_op,_val_summary = sess.run([val_loss,val_acc, val_acc_op, val_summary])
+                    _val_loss,_,_val_acc_op,_cond,_val_summary = sess.run([val_loss,val_acc, val_acc_op,cond, val_summary])
                     val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
-                print "Epoch ends with val_loss: {} and val_accuracy: {}".format(val_loss, val_acc_op)
-                if val_acc_op > best_val_acc:
-                    best_val_acc = val_acc_op
-                    saver.save(sess, 'yoloModel')
+                # print "\nEpoch ends with val_loss: {} and val_accuracy: {}".format(val_loss, val_acc_op)
+                 if _cond == True:
+                     print("Cond is true =) ")
+                     saver.save(sess, 'yoloModel')
+
 
 
 def main(argv=None):
