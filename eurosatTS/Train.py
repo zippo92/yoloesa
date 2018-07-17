@@ -74,10 +74,10 @@ class Train():
 
         val_summary = tf.summary.merge([val_loss_summ,val_acc_summ])
 
-        best_val_acc = tf.constant(0)
+        best_val_acc = tf.constant(0,dtype=tf.float32)
         saver = tf.train.Saver()
 
-        cond = tf.cond(tf.less(best_val_acc,val_acc_op), tf.assign(best_val_acc,val_acc_op))
+        cond = tf.cond(tf.less(val_acc_op,best_val_acc), tf.assign(best_val_acc,val_acc_op))
 
         print(len(self.trainDataset))
         init = tf.global_variables_initializer()
