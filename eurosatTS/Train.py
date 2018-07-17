@@ -100,9 +100,9 @@ class Train():
                     _val_loss,_,_val_acc_op,_cond,_val_summary = sess.run([val_loss,val_acc, val_acc_op,cond, val_summary])
                     val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
                 # print "\nEpoch ends with val_loss: {} and val_accuracy: {}".format(val_loss, val_acc_op)
-                 if _cond == True:
-                     print("Cond is true =) ")
-                     saver.save(sess, 'yoloModel')
+                if _cond == True:
+                    print("Cond is true =) ")
+                    saver.save(sess, 'yoloModel')
 
 
 
