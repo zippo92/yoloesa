@@ -29,8 +29,8 @@ def parseFilenames(path):
     return data
 
 if __name__ == '__main__':
-    data = parseFilenames("../dataset/eurosat_prova/train")
-    writer = tf.python_io.TFRecordWriter('eurosatDb.tfrecord')
+    data = parseFilenames("../dataset/eurosat_prova/test")
+    writer = tf.python_io.TFRecordWriter('eurosatTest.tfrecord')
 
     for item in data:
         image = tf.train.Feature(bytes_list=tf.train.BytesList(value=[item[0].tostring()]))
