@@ -74,10 +74,19 @@ class Train():
 
         val_summary = tf.summary.merge([val_loss_summ,val_acc_summ])
 
-        best_val_acc = tf.constant(0,dtype=tf.float32)
+        best_val_acc = tf.Variable(0,dtype=tf.float32)
         saver = tf.train.Saver()
 
-        cond = tf.cond(tf.less(val_acc_op,best_val_acc), lambda: best_val_acc.assign(val_acc_op))
+        def f1():
+            best_val_acc.assign(val_acc_op)
+            saver.save("myModel")
+            print("Cond true!\n")
+            return best_val_acc
+
+        def f2():
+            return best_val_acc
+
+        cond = tf.cond(tf.less(best_val_acc,val_acc_op), f1, f2)
 
         print(len(self.trainDataset))
         init = tf.global_variables_initializer()
@@ -97,12 +106,8 @@ class Train():
                 print("\nValidation start\n")
                 val_progbar = tf.keras.utils.Progbar(target=self.val_batch_number)
                 for step in xrange(self.val_batch_number):
-                    _val_loss,_,_val_acc_op,_cond,_val_summary = sess.run([val_loss,val_acc, val_acc_op,cond, val_summary])
+                    _val_loss,_,_val_acc_op, _cond,_val_summary = sess.run([val_loss,val_acc, val_acc_op, cond, val_summary])
                     val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
-                # print "\nEpoch ends with val_loss: {} and val_accuracy: {}".format(val_loss, val_acc_op)
-                if _cond == True:
-                    print("Cond is true =) ")
-                    saver.save(sess, 'yoloModel')
 
 
 
