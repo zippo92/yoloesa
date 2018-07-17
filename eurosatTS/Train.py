@@ -26,7 +26,7 @@ class YoloSolver():
         self.dataset.build(height=self.height, width=self.width, batch_size=self.batch_size, num_epoch=self.num_epoch, shuffle=self.shuffle)
 
         self.yolo = Yolo()
-        self.construct_graph()
+        # self.construct_graph()
 
 
 
@@ -65,6 +65,15 @@ class YoloSolver():
 
 
     def solve(self):
+
+        images, labels, labelsohe = self.dataset.get_next()
+        predicts, logits = self.yolo.inference(images)
+        total_loss = self.yolo.loss(logits, labelsohe)
+        tf.summary.scalar('loss', total_loss)
+        opt = tf.train.AdamOptimizer()
+        train_step = opt.minimize(total_loss)
+
+
         init = tf.global_variables_initializer()
 
         initDataset = self.dataset.init()
@@ -86,7 +95,7 @@ class YoloSolver():
 
                 for step in range(len(self.dataset)/self.batch_size):
 
-                    _, loss_value,_summaryop = sess.run([self.train_op, self.total_loss, summary_op])
+                    _, loss_value,_summaryop = sess.run([train_step, total_loss, summary_op])
                     progbar.update(step,[("loss",loss_value)])
                     summary_writer.add_summary(_summaryop,epoch)
 
