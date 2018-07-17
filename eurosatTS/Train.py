@@ -25,8 +25,6 @@ class YoloSolver():
 
         self.dataset.build(height=self.height, width=self.width, batch_size=self.batch_size, num_epoch=self.num_epoch, shuffle=self.shuffle)
 
-        print(len(self.dataset) / 12)
-
         self.yolo = Yolo()
         self.construct_graph()
 
@@ -86,7 +84,6 @@ class YoloSolver():
 
             for epoch in xrange(self.num_epoch):
                 # start_time = time.time()
-                #np_images, np_labels, np_labelsohe = self.dataset.get_next()
                 print("epoch:{}".format(epoch))
 
                 progbar = tf.keras.utils.Progbar(len(self.dataset)/self.batch_size)
