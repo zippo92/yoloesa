@@ -58,7 +58,7 @@ class Train():
 
         train_acc_summ = tf.summary.scalar('accuracy', train_acc)
 
-        train_summary = tf.summary.merge(train_loss_summ,train_acc_summ)
+        train_summary = tf.summary.merge([train_loss_summ,train_acc_summ])
 
         val_x, val_y, val_yohe = self.valDataset.get_next()
         val_predict, val_softmax = self.yolo.inference(val_x)
@@ -72,7 +72,7 @@ class Train():
         val_loss_summ = tf.summary.scalar('loss', val_loss)
         val_acc_summ = tf.summary.scalar('accuracy', val_acc)
 
-        val_summary = tf.summary.merge(val_loss_summ,val_acc_summ)
+        val_summary = tf.summary.merge([val_loss_summ,val_acc_summ])
 
 
         print(len(self.trainDataset))
