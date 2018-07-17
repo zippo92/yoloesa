@@ -77,7 +77,7 @@ class Train():
         best_val_acc = tf.constant(0,dtype=tf.float32)
         saver = tf.train.Saver()
 
-        cond = tf.cond(tf.less(val_acc_op,best_val_acc), tf.assign(best_val_acc,val_acc_op))
+        cond = tf.cond(tf.less(val_acc_op,best_val_acc), best_val_acc.assign(val_acc_op))
 
         print(len(self.trainDataset))
         init = tf.global_variables_initializer()
