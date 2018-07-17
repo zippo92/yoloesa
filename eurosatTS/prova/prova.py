@@ -91,3 +91,4 @@ with tf.Session() as sess:
         for step in range(675):
             _, _loss = sess.run([training_step, loss])
             progbar.update(step, [("loss", _loss)])
+

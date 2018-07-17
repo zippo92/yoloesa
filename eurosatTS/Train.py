@@ -31,10 +31,6 @@ class YoloSolver():
 
 
     def construct_graph(self):
-
-        # construct graph
-        self.global_step = tf.Variable(0, trainable=False)
-
         self.images, self.labels, self.labelsohe = self.dataset.get_next()
         self.predicts, self.logits = self.yolo.inference(self.images)
         self.total_loss = self.yolo.loss(self.logits, self.labelsohe)
