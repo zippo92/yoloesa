@@ -6,13 +6,30 @@ import matplotlib.pyplot as plt
 import os
 from dataset import Dataset
 from Yolo import Yolo
+import ConfigParser
+
 
 class Train():
     def __init__(self):
         path = "./data/eurosatDb.tfrecord"
 
+        self.config = ConfigParser.ConfigParser()
+        self.config.read("config/conf.cfg")
+
+        self.height = int(self.config.get("Common Params", "height"))
+        self.width = int(self.config.get("Common Params", "width"))
+        self.batch_size = int(self.config.get("Common Params", "batch_size"))
+        self.num_epoch = int(self.config.get("Common Params", "num_epoch"))
+        self.shuffle = int(self.config.get("Common Params", "shuffle"))
+        self.train_dir = self.config.get("Common Params", "train_dir")
+        self.max_iterations = int(self.config.get("Common Params", "max_iterations"))
+
         self.dataset = Dataset(path)
-        self.dataset.build()
+
+        self.dataset.build(height=self.height, width=self.width, batch_size=self.batch_size, num_epochs=self.num_epoch,
+                           shuffle=self.shuffle, num_parallel_calls=4)
+
+        # self.dataset.build()
         self.yolo = Yolo()
 
     def solve(self):

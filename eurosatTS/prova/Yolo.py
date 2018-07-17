@@ -9,7 +9,7 @@ class Yolo():
         import ConfigParser
 
         config = ConfigParser.ConfigParser()
-        config.read("../config/vgg16.cfg")
+        config.read("config/vgg16.cfg")
         predicts = images
         for layer in config.sections():
 
