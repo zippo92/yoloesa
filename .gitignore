@@ -105,3 +105,4 @@ venv.bak/
 .idea/
 /eurosatTS/dataset
 /eurosatTS/eurosatDb.tfrecord
+/eurosatTS/data/eurosatDb.tfrecord

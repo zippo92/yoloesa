@@ -1,16 +1,17 @@
-from Dataset import Dataset
+from __future__ import absolute_import
+
+
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import os
+from dataset import Dataset
+from eurosatTS.old.Yolo import Yolo
 import ConfigParser
 
-from Yolo import Yolo
 
-
-class YoloSolver():
-
+class Train():
     def __init__(self):
-        self.dataset = Dataset("eurosatDb.tfrecord")
+        path = "./data/eurosatDb.tfrecord"
 
         self.config = ConfigParser.ConfigParser()
         self.config.read("config/conf.cfg")
@@ -23,85 +24,38 @@ class YoloSolver():
         self.train_dir = self.config.get("Common Params", "train_dir")
         self.max_iterations = int(self.config.get("Common Params", "max_iterations"))
 
-        self.dataset.build(height=self.height, width=self.width, batch_size=self.batch_size, num_epoch=self.num_epoch, shuffle=self.shuffle)
+        self.dataset = Dataset(path)
 
+        self.dataset.build(height=self.height, width=self.width, batch_size=self.batch_size, num_epochs=self.num_epoch,
+                           shuffle=self.shuffle, num_parallel_calls=4)
+
+        # self.dataset.build()
         self.yolo = Yolo()
-        # self.construct_graph()
-
-
-
-    def construct_graph(self):
-        self.images, self.labels, self.labelsohe = self.dataset.get_next()
-        self.predicts, self.logits = self.yolo.inference(self.images)
-        self.total_loss = self.yolo.loss(self.logits, self.labelsohe)
-        tf.summary.scalar('loss', self.total_loss)
-        self.train_op = self._train(self.total_loss)
-
-
-    def _train(self, loss):
-        """Train model
-        Create an optimizer and apply to all trainable variables.
-        Args:
-          total_loss: Total loss from net.loss()
-          global_step: Integer Variable counting the number of training steps
-          processed
-        Returns:
-          train_op: op for training
-        """
-        config = ConfigParser.ConfigParser()
-        config.read("config/conf.cfg")
-
-        learning_rate =float(config.get("Common Params", "learning_rate"))
-        moment = float(config.get("Common Params", "moment"))
-        opt = tf.train.AdamOptimizer()
-        train_step = opt.minimize(loss)
-        return train_step
-
-            # grads = opt.compute_gradients(self.total_loss)
-
-            # apply_gradient_op = opt.apply_gradients(grads, global_step=self.global_step)
-
-            #return apply_gradient_op
-
 
     def solve(self):
+        x, y, yohe = self.dataset.get_next()
+        dense2, softmax = self.yolo.inference(x)
 
-        images, labels, labelsohe = self.dataset.get_next()
-        predicts, logits = self.yolo.inference(images)
-        total_loss = self.yolo.loss(logits, labelsohe)
-        tf.summary.scalar('loss', total_loss)
-        opt = tf.train.AdamOptimizer()
-        train_step = opt.minimize(total_loss)
+        loss = self.yolo.loss(dense2,yohe)
+        optimizer = tf.train.AdamOptimizer()
+        training_step = optimizer.minimize(loss)
 
-
+        print(len(self.dataset))
         init = tf.global_variables_initializer()
-
-        initDataset = self.dataset.init()
-
-        summary_op = tf.summary.merge_all()
-
         with tf.Session() as sess:
-
             sess.run(init)
-            sess.run(initDataset)
+            sess.run(self.dataset.init())
+            for epoch in range(100):
+                print("Epoch:{}".format(epoch))
+                progbar = tf.keras.utils.Progbar(675)
+                for step in range(675):
+                    _, _loss = sess.run([training_step, loss])
+                    progbar.update(step, [("loss", _loss)])
 
-            summary_writer = tf.summary.FileWriter(self.train_dir, sess.graph)
-
-            for epoch in xrange(self.num_epoch):
-                # start_time = time.time()
-                print("epoch:{}".format(epoch))
-
-                progbar = tf.keras.utils.Progbar(len(self.dataset)/self.batch_size)
-
-                for step in range(len(self.dataset)/self.batch_size):
-
-                    _, loss_value,_summaryop = sess.run([train_step, total_loss, summary_op])
-                    progbar.update(step,[("loss",loss_value)])
-                    summary_writer.add_summary(_summaryop,epoch)
 
 def main(argv=None):
-    yolosolver = YoloSolver()
-    yolosolver.solve()
+    train = Train()
+    train.solve()
 
 if __name__ == '__main__':
     tf.app.run()
