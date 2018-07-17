@@ -79,7 +79,7 @@ class Train():
 
         def f1():
             best_val_acc.assign(val_acc_op)
-            saver.save("myModel")
+            # saver.save(sess,"myModel")
             print("Cond true!\n")
             return best_val_acc
 
