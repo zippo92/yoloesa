@@ -40,8 +40,11 @@ class Train():
         optimizer = tf.train.AdamOptimizer()
         training_step = optimizer.minimize(loss)
 
-        correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(yohe, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        # correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(yohe, 1))
+        # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+        acc, acc_op = tf.metrics.accuracy(labels=tf.argmax(yohe, 1),
+                                          predictions=tf.argmax(predict, 1))
 
         print(len(self.dataset))
         init = tf.global_variables_initializer()
@@ -52,10 +55,8 @@ class Train():
                 print("Epoch:{}".format(epoch))
                 progbar = tf.keras.utils.Progbar(675)
                 for step in range(675):
-                    _, _loss = sess.run([training_step, loss])
-                    progbar.update(step, [("loss", _loss)])
-                train_accuracy = accuracy.eval()
-                print("epoch %d, training accuracy %g" % (epoch, train_accuracy))
+                    _, _loss,accuracy = sess.run([training_step, loss,acc_op])
+                    progbar.update(step, [("loss", _loss), ("accuracy", acc_op)])
 
 def main(argv=None):
     train = Train()
