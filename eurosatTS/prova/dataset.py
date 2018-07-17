@@ -6,14 +6,15 @@ import os
 
 class Dataset(object):
     def __init__(self, file_path):
+	self.path = file_path
         self.dataset = tf.data.TFRecordDataset(file_path)
 
     def __len__(self):
-        return sum(1 for _ in tf.python_io.tf_record_iterator(self._tfRecordpPath))
+        return sum(1 for _ in tf.python_io.tf_record_iterator(self.path))
 
     def build(self, num_class=10,
               height=256, width=256,
-              batch_size=10, num_epochs=1,
+              batch_size=32, num_epochs=100,
               shuffle=1000000, num_parallel_calls=2):
         self._num_class = num_class
         self._height = height

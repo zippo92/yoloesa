@@ -76,11 +76,14 @@ loss = tf.losses.softmax_cross_entropy(onehot_labels=yohe, logits=dense2)
 optimizer = tf.train.AdamOptimizer()
 training_step = optimizer.minimize(loss)
 
-
+print(len(dataset))
 init = tf.global_variables_initializer()
 with tf.Session() as sess:
     sess.run(init)
     sess.run(dataset.init())
-    for i in range(30):
-        _, _loss = sess.run([training_step, loss])
-        print(i, _loss)
+    for epoch in range(100):
+	print("Epoch:{}".format(epoch))
+	progbar = tf.keras.utils.Progbar(675)
+	for step in range(675):
+        	_, _loss = sess.run([training_step, loss])
+        	progbar.update(step,[("loss",_loss)])
