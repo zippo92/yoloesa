@@ -83,6 +83,7 @@ class Train():
             sess.run(init)
             sess.run(init_local)
             sess.run(self.trainDataset.init())
+            sess.run(self.valDataset.init())
             for epoch in range(self.num_epoch):
                 print("Epoch:{}".format(epoch))
                 train_progbar = tf.keras.utils.Progbar(self.train_batch_number)
