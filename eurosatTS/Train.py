@@ -36,17 +36,15 @@ class YoloSolver():
 
         # construct graph
         self.global_step = tf.Variable(0, trainable=False)
-        # self.images = tf.placeholder(tf.float32, (self.batch_size, self.height, self.width, 3))
-        # self.labels = tf.placeholder(tf.float32, (self.batch_size, 10)) # TODO verificare
 
         self.images, self.labels, self.labelsohe = self.dataset.get_next()
         self.predicts, self.logits = self.yolo.inference(self.images)
         self.total_loss = self.yolo.loss(self.logits, self.labelsohe)
         tf.summary.scalar('loss', self.total_loss)
-        self.train_op = self._train()
+        self.train_op = self._train(self.total_loss)
 
 
-    def _train(self):
+    def _train(self, loss):
         """Train model
         Create an optimizer and apply to all trainable variables.
         Args:
@@ -61,8 +59,8 @@ class YoloSolver():
 
         learning_rate =float(config.get("Common Params", "learning_rate"))
         moment = float(config.get("Common Params", "moment"))
-        opt = tf.train.AdamOptimizer(learning_rate)
-        train_step = opt.minimize(self.total_loss)
+        opt = tf.train.AdamOptimizer()
+        train_step = opt.minimize(loss)
         return train_step
 
             # grads = opt.compute_gradients(self.total_loss)
@@ -79,25 +77,25 @@ class YoloSolver():
 
         summary_op = tf.summary.merge_all()
 
-        sess = tf.Session()
+        with tf.Session() as sess:
 
-        sess.run(init)
-        sess.run(initDataset)
+            sess.run(init)
+            sess.run(initDataset)
 
-        summary_writer = tf.summary.FileWriter(self.train_dir, sess.graph)
+            summary_writer = tf.summary.FileWriter(self.train_dir, sess.graph)
 
-        for epoch in xrange(self.num_epoch):
-            # start_time = time.time()
-            #np_images, np_labels, np_labelsohe = self.dataset.get_next()
-            print("epoch:{}".format(epoch))
+            for epoch in xrange(self.num_epoch):
+                # start_time = time.time()
+                #np_images, np_labels, np_labelsohe = self.dataset.get_next()
+                print("epoch:{}".format(epoch))
 
-            progbar = tf.keras.utils.Progbar(len(self.dataset)/self.batch_size)
+                progbar = tf.keras.utils.Progbar(len(self.dataset)/self.batch_size)
 
-            for step in range(len(self.dataset)/self.batch_size):
+                for step in range(len(self.dataset)/self.batch_size):
 
-                _, loss_value,_summaryop = sess.run([self.train_op, self.total_loss, summary_op])
-                progbar.update(step,[("loss",loss_value)])
-            summary_writer.add_summary(_summaryop,epoch)
+                    _, loss_value,_summaryop = sess.run([self.train_op, self.total_loss, summary_op])
+                    progbar.update(step,[("loss",loss_value)])
+                    summary_writer.add_summary(_summaryop,epoch)
 
 def main(argv=None):
     yolosolver = YoloSolver()
