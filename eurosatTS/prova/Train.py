@@ -16,8 +16,12 @@ class Train():
         self.yolo = Yolo()
 
     def solve(self):
+        x, y, yohe = self.dataset.get_next()
+        dense2, softmax = self.yolo.inference(x)
 
-        loss, training_step = self.construct_graph()
+        loss = self.yolo.loss(dense2,yohe)
+        optimizer = tf.train.AdamOptimizer()
+        training_step = optimizer.minimize(loss)
 
         print(len(self.dataset))
         init = tf.global_variables_initializer()
@@ -31,15 +35,7 @@ class Train():
                     _, _loss = sess.run([training_step, loss])
                     progbar.update(step, [("loss", _loss)])
 
-    def construct_graph(self):
-        images, labels, labelsohe = self.dataset.get_next()
-        predicts, logits = self.yolo.inference(images)
-        total_loss = self.yolo.loss(logits, labelsohe)
 
-        optimizer = tf.train.AdamOptimizer()
-        training_step = optimizer.minimize(self.loss)
-
-        return total_loss, training_step
 def main(argv=None):
     train = Train()
     train.solve()
