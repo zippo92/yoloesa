@@ -48,15 +48,18 @@ class Train():
 
         print(len(self.dataset))
         init = tf.global_variables_initializer()
+        init_local = tf.local_variables_initializer()
+
         with tf.Session() as sess:
             sess.run(init)
+            sess.run(init_local)
             sess.run(self.dataset.init())
             for epoch in range(100):
                 print("Epoch:{}".format(epoch))
                 progbar = tf.keras.utils.Progbar(675)
                 for step in range(675):
-                    _, _loss,accuracy = sess.run([training_step, loss,acc_op])
-                    progbar.update(step, [("loss", _loss), ("accuracy", acc_op)])
+                    _, _loss,acc,accuracy = sess.run([training_step, loss,acc,acc_op])
+                    progbar.update(step, [("loss", _loss), ("accuracy", accuracy)])
 
 def main(argv=None):
     train = Train()
