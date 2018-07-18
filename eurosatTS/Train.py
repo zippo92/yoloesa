@@ -90,7 +90,7 @@ class Train():
         print(len(self.trainDataset))
         init = tf.global_variables_initializer()
         init_local = tf.local_variables_initializer()
-
+        best_val_acc = 0
         with tf.Session() as sess:
             sess.run(init)
             sess.run(init_local)
@@ -102,15 +102,23 @@ class Train():
                 print("\nEpoch:{}\n".format(epoch))
                 train_progbar = tf.keras.utils.Progbar(self.train_batch_number)
                 for step in xrange(self.train_batch_number):
-                    _, _train_loss,_,_tr_acc_op, _train_summary = sess.run([training_step,train_loss, train_acc, train_acc_op,train_summary])
-                    train_progbar.update(step, [("tr_loss", _train_loss), ("tr_accuracy", _tr_acc_op)])
+                    _, _train_loss,_tr_acc,_tr_acc_op, _train_summary = sess.run([training_step,train_loss, train_acc, train_acc_op,train_summary])
+                    # train_progbar.update(step, [("tr_loss", _train_loss), ("tr_accuracy", _tr_acc_op)])
+                    print _tr_acc, _tr_acc_op
                 print("\nValidation start\n")
                 val_progbar = tf.keras.utils.Progbar(target=self.val_batch_number)
                 for step in xrange(self.val_batch_number):
-                    _val_loss,_,_val_acc_op,_val_summary = sess.run([val_loss,val_acc, val_acc_op, val_summary])
-                    val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
+                    _val_loss,_val_acc,_val_acc_op,_val_summary = sess.run([val_loss,val_acc, val_acc_op, val_summary])
+                    # val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
+                    print _val_acc, _val_acc_op
                 trainWriter.add_summary(_train_summary,epoch)
                 valWriter.add_summary(_val_summary)
+
+                if _val_acc_op > best_val_acc:
+                    best_val_acc = _val_acc_op
+                    #saver
+                print "Best val accuracy: {}\n".format(best_val_acc)
+
 
 def main(argv=None):
     train = Train()
