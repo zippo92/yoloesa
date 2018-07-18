@@ -56,7 +56,7 @@ class Train():
         train_acc, train_acc_op = tf.metrics.accuracy(labels=tf.argmax(train_yohe, 1),
                                                 predictions=tf.argmax(train_predict, 1))
 
-        train_acc_summ = tf.summary.scalar('accuracy', train_acc)
+        train_acc_summ = tf.summary.scalar('train_accuracy', train_acc)
 
         train_summary = tf.summary.merge([train_loss_summ,train_acc_summ])
 
@@ -70,7 +70,7 @@ class Train():
                                                 predictions=tf.argmax(val_predict, 1))
 
         val_loss_summ = tf.summary.scalar('loss', val_loss)
-        val_acc_summ = tf.summary.scalar('accuracy', val_acc)
+        val_acc_summ = tf.summary.scalar('val_accuracy', val_acc)
 
         val_summary = tf.summary.merge([val_loss_summ,val_acc_summ])
 
