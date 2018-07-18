@@ -108,3 +108,4 @@ venv.bak/
 /eurosatTS/data/eurosatDb.tfrecord
 /eurosatTS/data/eurosatTest.tfrecord
 /eurosatTS/data/eurosatTrain.tfrecord
+/eurosatTS/logs/

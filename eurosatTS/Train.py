@@ -112,7 +112,7 @@ class Train():
                 trainWriter.add_summary(train_summary,epoch)
                 valWriter.add_summary(val_summary)
 
-    def main(argv=None):
+def main(argv=None):
     train = Train()
     train.solve()
 
