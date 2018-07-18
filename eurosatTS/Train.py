@@ -103,7 +103,7 @@ class Train():
 
                 if _val_acc_op > best_val_acc:
                     best_val_acc = _val_acc_op
-                    #saver
+                    saver.save(sess,"./logs/yoloAcc{}".format(val_acc_op), global_step=epoch)
                 print "\nBest val accuracy: {}\n".format(best_val_acc)
 
 
