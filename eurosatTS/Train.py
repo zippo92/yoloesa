@@ -76,17 +76,16 @@ class Train():
 
         best_val_acc = tf.Variable(0,dtype=tf.float32)
         saver = tf.train.Saver()
-
-        def f1():
-            best_val_acc.assign(val_acc_op)
-            # saver.save(sess,"myModel")
-            print("Cond true!\n")
-            return best_val_acc
-
-        def f2():
-            return best_val_acc
-
-        cond = tf.cond(tf.less(best_val_acc,val_acc_op), f1, f2)
+        #
+        # def f1():
+        #     best_val_acc.assign(val_acc_op)
+        #     # saver.save(sess,"myModel")
+        #     return best_val_acc
+        #
+        # def f2():
+        #     return best_val_acc
+        #
+        # cond = tf.cond(tf.less(best_val_acc,val_acc_op), f1, f2)
 
         print(len(self.trainDataset))
         init = tf.global_variables_initializer()
@@ -97,6 +96,8 @@ class Train():
             sess.run(init_local)
             sess.run(self.trainDataset.init())
             sess.run(self.valDataset.init())
+            trainWriter = tf.summary.FileWriter("./logs/train", sess.graph)
+            valWriter = tf.summary.FileWriter("./logs/val")
             for epoch in range(self.num_epoch):
                 print("\nEpoch:{}\n".format(epoch))
                 train_progbar = tf.keras.utils.Progbar(self.train_batch_number)
@@ -106,12 +107,12 @@ class Train():
                 print("\nValidation start\n")
                 val_progbar = tf.keras.utils.Progbar(target=self.val_batch_number)
                 for step in xrange(self.val_batch_number):
-                    _val_loss,_,_val_acc_op, _cond,_val_summary = sess.run([val_loss,val_acc, val_acc_op, cond, val_summary])
+                    _val_loss,_,_val_acc_op,_val_summary = sess.run([val_loss,val_acc, val_acc_op, val_summary])
                     val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
+                trainWriter.add_summary(train_summary,epoch)
+                valWriter.add_summary(val_summary)
 
-
-
-def main(argv=None):
+    def main(argv=None):
     train = Train()
     train.solve()
 
