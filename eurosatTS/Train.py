@@ -56,7 +56,7 @@ class Train():
         train_acc, train_acc_op = tf.metrics.accuracy(labels=tf.argmax(train_yohe, 1),
                                                 predictions=tf.argmax(train_predict, 1))
 
-        train_acc_summ = tf.summary.scalar('train_accuracy', train_acc)
+        train_acc_summ = tf.summary.scalar('train_accuracy', train_acc_op)
 
         train_summary = tf.summary.merge([train_loss_summ,train_acc_summ])
 
@@ -70,22 +70,11 @@ class Train():
                                                 predictions=tf.argmax(val_predict, 1))
 
         val_loss_summ = tf.summary.scalar('loss', val_loss)
-        val_acc_summ = tf.summary.scalar('val_accuracy', val_acc)
+        val_acc_summ = tf.summary.scalar('val_accuracy', val_acc_op)
 
         val_summary = tf.summary.merge([val_loss_summ,val_acc_summ])
 
-        best_val_acc = tf.Variable(0,dtype=tf.float32)
         saver = tf.train.Saver()
-        #
-        # def f1():
-        #     best_val_acc.assign(val_acc_op)
-        #     # saver.save(sess,"myModel")
-        #     return best_val_acc
-        #
-        # def f2():
-        #     return best_val_acc
-        #
-        # cond = tf.cond(tf.less(best_val_acc,val_acc_op), f1, f2)
 
         print(len(self.trainDataset))
         init = tf.global_variables_initializer()
@@ -103,24 +92,24 @@ class Train():
                 train_progbar = tf.keras.utils.Progbar(self.train_batch_number)
                 for step in xrange(self.train_batch_number):
                     _, _train_loss,_tr_acc,_tr_acc_op, _train_summary = sess.run([training_step,train_loss, train_acc, train_acc_op,train_summary])
-                    # train_progbar.update(step, [("tr_loss", _train_loss), ("tr_accuracy", _tr_acc_op)])
-                    print _tr_acc, _tr_acc_op
+                    train_progbar.update(step, [("tr_loss", _train_loss), ("tr_accuracy", _tr_acc_op)])
                 print("\nValidation start\n")
                 val_progbar = tf.keras.utils.Progbar(target=self.val_batch_number)
                 for step in xrange(self.val_batch_number):
                     _val_loss,_val_acc,_val_acc_op,_val_summary = sess.run([val_loss,val_acc, val_acc_op, val_summary])
-                    # val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
-                    print _val_acc, _val_acc_op
+                    val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
                 trainWriter.add_summary(_train_summary,epoch)
                 valWriter.add_summary(_val_summary)
 
                 if _val_acc_op > best_val_acc:
                     best_val_acc = _val_acc_op
                     #saver
-                print "Best val accuracy: {}\n".format(best_val_acc)
+                print "\nBest val accuracy: {}\n".format(best_val_acc)
 
 
 def main(argv=None):
+    import shutil
+    shutil.rmtree('./logs')
     train = Train()
     train.solve()
 
