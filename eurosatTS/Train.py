@@ -109,8 +109,8 @@ class Train():
                 for step in xrange(self.val_batch_number):
                     _val_loss,_,_val_acc_op,_val_summary = sess.run([val_loss,val_acc, val_acc_op, val_summary])
                     val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
-                trainWriter.add_summary(train_summary,epoch)
-                valWriter.add_summary(val_summary)
+                trainWriter.add_summary(_train_summary,epoch)
+                valWriter.add_summary(_val_summary)
 
 def main(argv=None):
     train = Train()
