@@ -61,7 +61,7 @@ class Train():
         train_summary = tf.summary.merge([train_loss_summ,train_acc_summ])
 
         val_x, val_y, val_yohe = self.valDataset.get_next()
-        val_predict, val_softmax = self.yolo.inference(val_x)
+        val_predict, val_softmax = self.yolo.inference(val_x, reuse = True)
 
         val_loss = self.yolo.loss(val_predict,val_yohe)
 

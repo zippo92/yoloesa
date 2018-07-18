@@ -5,46 +5,47 @@ class Yolo():
 
     def __init__(self):
         pass
-    def inference(self, images):
+    def inference(self, images, reuse = False):
         import ConfigParser
 
         config = ConfigParser.ConfigParser()
         config.read("config/vgg16.cfg")
         predicts = images
-        for layer in config.sections():
+        with tf.variable_scope('yolo', reuse = reuse):
+            for layer in config.sections():
 
-            if layer.startswith("Conv"):
-                kernel = int(config.get(layer, "kernel_size"))
-                filters = int(config.get(layer, "filters"))
-                stride = int(config.get(layer, "stride"))
-                predicts = self.conv2d(predicts,kernel,filters,stride)
+                if layer.startswith("Conv"):
+                    kernel = int(config.get(layer, "kernel_size"))
+                    filters = int(config.get(layer, "filters"))
+                    stride = int(config.get(layer, "stride"))
+                    predicts = self.conv2d(predicts,kernel,filters,stride)
 
-            if layer.startswith("MaxPool"):
-                kernel = int(config.get(layer, "kernel_size"))
-                stride = int(config.get(layer, "stride"))
-                predicts = self.max_pool(predicts,kernel,stride)
+                if layer.startswith("MaxPool"):
+                    kernel = int(config.get(layer, "kernel_size"))
+                    stride = int(config.get(layer, "stride"))
+                    predicts = self.max_pool(predicts,kernel,stride)
 
-            if layer.startswith("DoubleConv"):
-                kernel_1 = int(config.get(layer, "kernel_size_1"))
-                filters_1 = int(config.get(layer, "filters_1"))
-                stride_1 = int(config.get(layer, "stride_1"))
-                kernel_2 = int(config.get(layer, "kernel_size_2"))
-                filters_2 = int(config.get(layer, "filters_2"))
-                stride_2 = int(config.get(layer, "stride_2"))
+                if layer.startswith("DoubleConv"):
+                    kernel_1 = int(config.get(layer, "kernel_size_1"))
+                    filters_1 = int(config.get(layer, "filters_1"))
+                    stride_1 = int(config.get(layer, "stride_1"))
+                    kernel_2 = int(config.get(layer, "kernel_size_2"))
+                    filters_2 = int(config.get(layer, "filters_2"))
+                    stride_2 = int(config.get(layer, "stride_2"))
 
-                for i in range(config.getint(layer, "repeat")):
-                    predicts = self.conv2d(predicts, kernel_1, filters_1, stride_1)
-                    predicts = self.conv2d(predicts,kernel_2,filters_2,stride_2)
+                    for i in range(config.getint(layer, "repeat")):
+                        predicts = self.conv2d(predicts, kernel_1, filters_1, stride_1)
+                        predicts = self.conv2d(predicts,kernel_2,filters_2,stride_2)
 
-            if layer.startswith("Fully"):
-                units = int(config.get(layer, "units"))
-                dropOutRate = float(config.get(layer, "dropOutRate"))
-                activation = config.get(layer, "activation")
-                predicts = self.dense(predicts, units, dropOutRate, activation)
+                if layer.startswith("Fully"):
+                    units = int(config.get(layer, "units"))
+                    dropOutRate = float(config.get(layer, "dropOutRate"))
+                    activation = config.get(layer, "activation")
+                    predicts = self.dense(predicts, units, dropOutRate, activation)
 
-        logits = tf.nn.softmax(predicts)
+            logits = tf.nn.softmax(predicts)
 
-        return predicts, logits
+            return predicts, logits
 
 
     def conv2d(self, input, kernel_size,filters, stride):
