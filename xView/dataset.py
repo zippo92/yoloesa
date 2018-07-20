@@ -53,7 +53,7 @@ class Dataset(object):
         # img = tf.decode_raw(parsed['image/encoded'], tf.float32)
         img = tf.image.decode_jpeg(parsed['image/encoded'])
         width = parsed['image/width']
-        height = parsed['image/eight']
+        height = parsed['image/height']
         format = parsed['image/format']
         xmin = parsed['image/object/bbox/xmin']
         xmax = parsed['image/object/bbox/xmax']

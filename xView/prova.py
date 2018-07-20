@@ -16,5 +16,6 @@ with tf.Session() as sess:
 
     print(_label[0])
     print(_bbox[0])
-    plt.imshow(_img[0])
-    plt.show()
+    # plt.imshow(_img[0])
+    # plt.show()
+    print(_img[0])
