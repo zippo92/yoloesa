@@ -18,4 +18,4 @@ with tf.Session() as sess:
     print(_bbox[0])
     # plt.imshow(_img[0])
     # plt.show()
-    print(_img[0])
+    print(_img[0].shape)

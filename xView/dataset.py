@@ -51,7 +51,7 @@ class Dataset(object):
         parsed = tf.parse_single_example(example, features=read_features)
 
         # img = tf.decode_raw(parsed['image/encoded'], tf.float32)
-        img = tf.image.decode_jpeg(parsed['image/encoded'])
+        # img = tf.image.decode_jpeg(parsed['image/encoded'])
         width = parsed['image/width']
         height = parsed['image/height']
         format = parsed['image/format']
