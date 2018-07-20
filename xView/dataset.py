@@ -50,8 +50,8 @@ class Dataset(object):
 
         parsed = tf.parse_single_example(example, features=read_features)
 
-        img = tf.decode_raw(parsed['image/encoded'], tf.uint8)
-        # img = tf.image.decode_jpeg(parsed['image/encoded'])
+        # img = tf.decode_raw(parsed['image/encoded'], tf.uint8)
+        img = tf.image.decode_jpeg(parsed['image/encoded'])
         width = parsed['image/width']
         height = parsed['image/height']
         format = parsed['image/format']
@@ -61,6 +61,6 @@ class Dataset(object):
         ymax = parsed['image/object/bbox/ymax']
         label = parsed['image/object/class/label']
 
-        bbox = [xmin,xmax,ymin,ymax]
+        # bbox = [xmin,xmax,ymin,ymax]
 
-        return img, bbox, label
+        return img, xmin, label
