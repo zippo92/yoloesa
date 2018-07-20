@@ -29,7 +29,7 @@ def parseFilenames(path):
     return data
 
 if __name__ == '__main__':
-    data = parseFilenames("../dataset/eurosat_prova/test")
+    data = parseFilenames("../data/eurosat_prova/test")
     writer = tf.python_io.TFRecordWriter('eurosatTest.tfrecord')
 
     for item in data:
