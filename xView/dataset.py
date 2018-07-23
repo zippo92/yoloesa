@@ -28,7 +28,7 @@ class Dataset(object):
         # self.dataset = self.dataset.shuffle(self._shuffle)
         self.dataset = self.dataset.map(self.__input_parser, num_parallel_calls=num_parallel_calls)
         # self.dataset = self.dataset.padded_batch(self._batch_size, padded_shapes= [None,None,None])
-        self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
+        # self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
         # self.dataset = self.dataset.repeat(self._num_epochs)
         # self._iterator = tf.data.Iterator.from_structure(self.dataset.output_types,
         #                                                        self.dataset.output_shapes)
@@ -47,7 +47,6 @@ class Dataset(object):
         xmax = tensor[1]
         ymin = tensor[2]
         ymax = tensor[3]
-        label = tensor[4]
 
         width = tf.subtract(xmax, xmin)
         height = tf.subtract(ymax, ymin)
@@ -107,8 +106,8 @@ class Dataset(object):
         bb_ymax = tf.sparse_tensor_to_dense(parsed['image/object/bbox/ymax'])
         label = tf.sparse_tensor_to_dense(parsed['image/object/class/label'])
 
-        bb = tf.stack([bb_xmin,bb_xmax,bb_ymin,bb_ymax,label], axis = 1)
+        bb = tf.stack([bb_xmin,bb_xmax,bb_ymin,bb_ymax], axis = 1)
 
-        w,h = tf.map_fn(self.__parse_bb, bb)
+        w = tf.map_fn(self.__parse_bb, bb, dtype= (tf.float32,tf.float32))
 
-        return img, w, label
+        return img, w[4], label
