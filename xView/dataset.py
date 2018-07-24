@@ -52,8 +52,10 @@ class Dataset(object):
         height = tf.subtract(ymax, ymin)
 
         # acnhor_indxs = self.get_active_anchors(width, height)
+        x_center = tf.divide(tf.add(xmin,width),tf.constant(2))
+        y_center = tf.divide(tf.add(ymin,height),tf.constant(2))
 
-        return width, height
+        return width, height, x_center,y_center
     def get_active_anchors(self, w, h):
         indxs = []
         iou_max, index_max = 0, 0
@@ -108,6 +110,11 @@ class Dataset(object):
 
         bb = tf.stack([bb_xmin,bb_xmax,bb_ymin,bb_ymax], axis = 1)
 
-        w = tf.map_fn(self.__parse_bb, bb, dtype= (tf.float32,tf.float32))
+        bb = tf.map_fn(self.__parse_bb, bb, dtype = (tf.float32,tf.float32,tf.float32,tf.float32))
 
-        return img, w[4], label
+        raw_w = tf.shape(img)[0]
+        raw_h = tf.shape(img)[1]
+        grid_x = tf.multiply(tf.divide(bb[3],raw_w), width)
+        grid_y = tf.multiply(tf.divide(bb[4],raw_h), height)
+
+        return img, grid_x, label
