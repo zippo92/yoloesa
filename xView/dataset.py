@@ -25,7 +25,7 @@ class Dataset(object):
         self._shuffle = shuffle
         self._s = s
         self._b = b
-        # self.dataset = self.dataset.shuffle(self._shuffle)
+        self.dataset = self.dataset.shuffle(self._shuffle)
         self.dataset = self.dataset.map(self.__input_parser, num_parallel_calls=num_parallel_calls)
         # self.dataset = self.dataset.padded_batch(self._batch_size, padded_shapes= [None,None,None])
         # self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
@@ -52,10 +52,10 @@ class Dataset(object):
         height = tf.subtract(ymax, ymin)
 
         # acnhor_indxs = self.get_active_anchors(width, height)
-        x_center = tf.divide(tf.add(xmin,width),tf.constant(2))
-        y_center = tf.divide(tf.add(ymin,height),tf.constant(2))
+        x_center = tf.add(xmin, tf.divide(width,tf.constant(2,dtype=tf.float32)))
+        y_center = tf.add(ymin, tf.divide(height,tf.constant(2, dtype=tf.float32)))
 
-        return width, height, x_center,y_center
+        return xmin, xmax, x_center,y_center
     def get_active_anchors(self, w, h):
         indxs = []
         iou_max, index_max = 0, 0
@@ -112,9 +112,10 @@ class Dataset(object):
 
         bb = tf.map_fn(self.__parse_bb, bb, dtype = (tf.float32,tf.float32,tf.float32,tf.float32))
 
-        raw_w = tf.shape(img)[0]
-        raw_h = tf.shape(img)[1]
-        grid_x = tf.multiply(tf.divide(bb[3],raw_w), width)
-        grid_y = tf.multiply(tf.divide(bb[4],raw_h), height)
+	width = tf.cast(width, tf.float32)
+	height = tf.cast(height, tf.float32)
+	
+        grid_x = tf.round(tf.multiply(bb[2], tf.constant(self._s, dtype= tf.float32)))
+        grid_y = tf.round(tf.multiply(bb[3], tf.constant(self._s, dtype=tf.float32)))
 
-        return img, grid_x, label
+        return img, grid_x, grid_y, bb[2], bb[3], label
