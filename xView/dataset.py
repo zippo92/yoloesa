@@ -51,11 +51,18 @@ class Dataset(object):
         width = tf.subtract(xmax, xmin)
         height = tf.subtract(ymax, ymin)
 
-        # acnhor_indxs = self.get_active_anchors(width, height)
         x_center = tf.add(xmin, tf.divide(width,tf.constant(2,dtype=tf.float32)))
         y_center = tf.add(ymin, tf.divide(height,tf.constant(2, dtype=tf.float32)))
 
-        return xmin, xmax, x_center,y_center
+        # Bisogna dividere width e height per gli anchor attivi, gli anchor dovranno essere sicuramente in percentuale
+
+        # anchor_indxs = self.get_active_anchors(width, height)
+        # w_scale = tf.divide(width,anchor[0])
+        # h_scale = tf.divide(height,anchor[1])
+
+        return width, height, x_center,y_center #w_scale,h_scale
+
+    #TODO da fare, l'ho solo copiata
     def get_active_anchors(self, w, h):
         indxs = []
         iou_max, index_max = 0, 0
@@ -98,7 +105,6 @@ class Dataset(object):
         parsed = tf.parse_single_example(example, features=read_features)
 
         img = tf.image.decode_image(parsed['image/encoded'])
-        # img = tf.image.decode_jpeg(parsed['image/encoded'])
         width = parsed['image/width']
         height = parsed['image/height']
         format = parsed['image/format']
@@ -112,10 +118,17 @@ class Dataset(object):
 
         bb = tf.map_fn(self.__parse_bb, bb, dtype = (tf.float32,tf.float32,tf.float32,tf.float32))
 
-	width = tf.cast(width, tf.float32)
-	height = tf.cast(height, tf.float32)
-	
-        grid_x = tf.round(tf.multiply(bb[2], tf.constant(self._s, dtype= tf.float32)))
-        grid_y = tf.round(tf.multiply(bb[3], tf.constant(self._s, dtype=tf.float32)))
+        grid_x = tf.multiply(bb[2], tf.constant(self._s, dtype=tf.float32))
+        grid_y = tf.multiply(bb[3], tf.constant(self._s, dtype=tf.float32))
+
+        grid_x_offset = tf.subtract(grid_x, tf.round(grid_x))
+        grid_y_offset = tf.subtract(grid_y, tf.round(grid_y))
+
+
+        # Per ogni active anchor
+        #     anchor_label=[grid_x_offset, grid_y_offset, bb[4] , bb[5]]
+        #     zeros[grid_y, grid_x, active_indx] = np.concatenate((anchor_label, [label], [1.0]) #TODO equivalente con tf.scatter_update
+
+
 
         return img, grid_x, grid_y, bb[2], bb[3], label
