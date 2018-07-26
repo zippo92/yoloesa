@@ -112,12 +112,20 @@ class Dataset(object):
 
         anchors_hw = tf.tile(tf.expand_dims(anchors , axis=0),[tf.shape(bb_hw)[0], 1, 1])
         bb_hw = tf.tile(tf.expand_dims(bb_hw, axis = 0), [tf.shape(anchors)[0], 1, 1])
+        bb_hw = tf.reshape(bb_hw, shape = (tf.shape(bb_hw)[1],tf.shape(bb_hw)[0],tf.shape(bb_hw)[2]))
 
-        print(bb_hw)
-        print(anchors_hw)
+        box_maxes = bb_hw / 2.
+        box_mins = -box_maxes
+        anchor_maxes = (anchors_hw / 2.)
+        anchor_mins = -anchor_maxes
 
-
-
+        intersect_mins = tf.maximum(box_mins, anchor_mins)
+        intersect_maxes = tf.minimum(box_maxes, anchor_maxes)
+        intersect_wh = tf.maximum(intersect_maxes - intersect_mins, 0.)
+        intersect_area = intersect_wh[:,:,0] * intersect_wh[:,:,1]
+        box_area = bb_hw[:,:,0]*bb_hw[:,:,1]
+        anchor_area = anchors_hw[:,:,0] * anchors_hw[:,:,1]
+        iou = intersect_area / (box_area + anchor_area - intersect_area)
         # grid_x_offset = tf.subtract(grid_x, tf.round(grid_x))
         # grid_y_offset = tf.subtract(grid_y, tf.round(grid_y))
 
