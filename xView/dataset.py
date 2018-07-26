@@ -132,9 +132,11 @@ class Dataset(object):
         # Per ogni active anchor
         #     anchor_label=[grid_x_offset, grid_y_offset, bb[4] , bb[5]]
         #     zeros[grid_y, grid_x, active_indx] = np.concatenate((anchor_label, [label], [1.0]) #TODO equivalente con tf.scatter_update
-	
-	iou_max = tf.reduce_max(iou, axis=[1])
- 	iou_argmax = tf.argmax(iou, dimension = 1)
-	#prova = tf.gather(iou,[:,iou_max] , axis=1)
-	
-        return bb_hw, anchors_hw, iou_max,  iou_argmax
+
+        iou_max = tf.reduce_max(iou, axis=[1])
+        iou_argmax = tf.argmax(iou, dimension=1)
+        # prova = tf.gather(iou,[:,iou_max] , axis=1)
+
+        iou_stack = tf.stack([grid_x, grid_y, iou_argmax, iou_max], axis=1)
+
+        return bb_hw, anchors_hw, iou,  iou_max, iou_stack
