@@ -141,13 +141,13 @@ class Dataset(object):
         condition = tf.less(tf.constant(0, dtype=tf.float32), iou_max)
         non_zeros = tf.where(condition)
 
-
-        def fn(grid_x, grid_y, ioy_argmax):
-            return tf.stack([grid_x, grid_y, iou_argmax], axis=1)
-
         iou_argmax = tf.cast(iou_argmax, tf.float32)
 
-        iou_stack = tf.stack([grid_x, grid_y, iou_argmax, iou_max], axis=1)
+        iou_stack = tf.stack([tf.cast(grid_x, tf.int64), tf.cast(grid_y,tf.int64), tf.cast(iou_argmax, tf.int64)], axis=1)
         iou_stack = tf.gather(iou_stack,non_zeros, axis = 0)
+
+        updates = tf.ones(shape=(tf.shape(grid_x)[0]))
+
+        shape = tf.constant([self._s, self._s, tf.shape(anchors)[0]])
 
         return bb_hw, anchors_hw, iou,  iou_max, iou_stack
