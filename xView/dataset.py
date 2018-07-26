@@ -29,7 +29,7 @@ class Dataset(object):
         self._b = b
         with open(self.anchor_path, 'r') as f:
             self._anchors = ast.literal_eval(f.read())
-        self.dataset = self.dataset.shuffle(self._shuffle)
+       # self.dataset = self.dataset.shuffle(self._shuffle)
         self.dataset = self.dataset.map(self.__input_parser, num_parallel_calls=num_parallel_calls)
 
         # self.dataset = self.dataset.padded_batch(self._batch_size, padded_shapes= [None,None,None])
@@ -132,7 +132,9 @@ class Dataset(object):
         # Per ogni active anchor
         #     anchor_label=[grid_x_offset, grid_y_offset, bb[4] , bb[5]]
         #     zeros[grid_y, grid_x, active_indx] = np.concatenate((anchor_label, [label], [1.0]) #TODO equivalente con tf.scatter_update
-
-
-
-        return bb_hw, anchors_hw
+	
+	iou_max = tf.reduce_max(iou, axis=[1])
+ 	iou_argmax = tf.argmax(iou, dimension = 1)
+	#prova = tf.gather(iou,[:,iou_max] , axis=1)
+	
+        return bb_hw, anchors_hw, iou_max,  iou_argmax
