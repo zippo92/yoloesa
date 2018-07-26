@@ -137,16 +137,17 @@ class Dataset(object):
 
         iou_max = tf.reduce_max(iou, axis=[1])
         iou_argmax = tf.argmax(iou, dimension=1)
-        # prova = tf.gather(iou,[:,iou_max] , axis=1)
 
         condition = tf.less(tf.constant(0, dtype=tf.float32), iou_max)
+        non_zeros = tf.where(condition)
+
 
         def fn(grid_x, grid_y, ioy_argmax):
             return tf.stack([grid_x, grid_y, iou_argmax], axis=1)
 
         iou_argmax = tf.cast(iou_argmax, tf.float32)
-        iou_stack = tf.cond(condition, lambda: fn(grid_x,grid_x,iou_argmax))
 
-        #iou_stack = tf.stack([grid_x, grid_y, iou_argmax, iou_max], axis=1)
+        iou_stack = tf.stack([grid_x, grid_y, iou_argmax, iou_max], axis=1)
+        iou_stack = tf.gather(iou_stack,non_zeros, axis = 0)
 
         return bb_hw, anchors_hw, iou,  iou_max, iou_stack
