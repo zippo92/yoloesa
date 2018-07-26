@@ -8,15 +8,15 @@ dataset = Dataset("./data/xview_train_t1.record", "./data/xview_anchors")
 
 dataset.build()
 
-img, bbox, label = dataset.get_next()
+bb, anchors = dataset.get_next()
 
 with tf.Session() as sess:
     sess.run(dataset.init())
-    for i in range(32):
-        _img, _bbox, _label = sess.run([img, bbox, label])
-        print(_label)
+    for i in range(1):
+        _bb, _anchor = sess.run([bb,anchors])
+        print(_bb)
 
-        print(_bbox)
+        print(_anchor)
     # plt.imshow(_img[0])
     # plt.show()
 # print(_img[0].shape)

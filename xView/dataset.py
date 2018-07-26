@@ -60,40 +60,10 @@ class Dataset(object):
         x_center = tf.add(xmin, tf.divide(width,tf.constant(2,dtype=tf.float32)))
         y_center = tf.add(ymin, tf.divide(height,tf.constant(2, dtype=tf.float32)))
 
-        # anchor_indxs = self.get_active_anchors(width, height)
-        # w_scale = tf.divide(width,anchor[0])
-        # h_scale = tf.divide(height,anchor[1])
 
-        return x_center, y_center, width, height, box_class
 
-    def get_active_anchors(self, w, h):
-        indxs = tf.Variable()
-        iou_max, index_max = 0, 0
-        for i, a in enumerate(self.anchors):
-            iou = self.iou_wh([w,h], a)
 
-            indxs = tf.cond(tf.less(tf.constant(0.7,dtype=tf.float32),iou),lambda: tf.concat([indxs,tf.constant(a,dtype=tf.float32)]))
-
-            # if iou > 0.7:
-            #     indxs.append(i)
-            if iou > iou_max:
-                iou_max, index_max = iou, i
-
-        if len(indxs) == 0:
-            indxs.append(index_max)
-
-        return indxs
-
-    def iou_wh(self, r1, r2):
-        min_w = tf.minimum(r1[0], tf.constant(r2[0], dtype=tf.float32))
-        min_h = tf.minimum(r1[1], tf.constant(r2[1], dtype=tf.float32))
-        area_r1 = tf.multiply(r1[0],r1[1])
-        area_r2 = tf.multiply(r2[0],r2[1])
-
-        intersect = tf.multiply(min_w,min_h)
-        union = tf.subtract(tf.add(area_r1,area_r2),intersect)
-
-        return tf.divide(intersect,union)
+        return x_center, y_center, height, width, box_class
 
     def __input_parser(self, example):
         read_features = {
@@ -132,23 +102,24 @@ class Dataset(object):
         img = tf.image.resize_images(img, size = [self._height,self._width])
 
 
-        bb = tf.map_fn(self.__parse_bb, bb, dtype = (tf.float32,tf.float32,tf.float32,tf.float32))
+        bb = tf.map_fn(self.__parse_bb, bb, dtype = (tf.float32,tf.float32,tf.float32,tf.float32,tf.float32))
 
         grid_x = tf.floor(tf.multiply(bb[0], tf.constant(self._s, dtype=tf.float32)))
         grid_y = tf.floor(tf.multiply(bb[1], tf.constant(self._s, dtype=tf.float32)))
-        print(grid_x)
-        print(grid_y)
+
+        bb_hw = tf.stack([bb[2], bb[3]], axis = 1) #num_bb, h, w
+        anchors = tf.convert_to_tensor(self._anchors, dtype=tf.float32) #num_anchor, h, w
+
+        anchors_hw = tf.tile(tf.expand_dims(anchors , axis=0),[tf.shape(bb_hw)[0], 1, 1])
+        bb_hw = tf.tile(tf.expand_dims(bb_hw, axis = 0), [tf.shape(anchors)[0], 1, 1])
+
+        print(bb_hw)
+        print(anchors_hw)
+
+
+
         # grid_x_offset = tf.subtract(grid_x, tf.round(grid_x))
         # grid_y_offset = tf.subtract(grid_y, tf.round(grid_y))
-
-        bb = tf.stack([bb[0],bb[1], bb[2], bb[3], bb[4]], axis = 1) #xcenter,ycenter,width,height, class
-
-        # for k, anchor in enumerate(self._anchors):
-        box_maxes = bb[:,2:4] / 2.
-        box_mins = -box_maxes
-        anchor_maxes = (self._anchors[0] / 2.)
-        anchor_mins = -anchor_maxes
-
 
         # Per ogni active anchor
         #     anchor_label=[grid_x_offset, grid_y_offset, bb[4] , bb[5]]
@@ -156,4 +127,4 @@ class Dataset(object):
 
 
 
-        return img, box_mins, anchor_mins, bb[2], bb[3], label
+        return bb_hw, anchors_hw
