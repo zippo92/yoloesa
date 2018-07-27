@@ -102,9 +102,9 @@ class Dataset(object):
         matching_true_boxes = tf.zeros([conv_height,conv_width,num_anchors, num_box_params])
         #img = img.set_shape([height,width,3])
         img = tf.image.resize_images(img, size = [self._height,self._width])
-	img = tf.image.convert_image_dtype(img,dtype = tf.float32)
+        img = tf.image.convert_image_dtype(img, dtype=tf.float32)
 
-        bb = tf.map_fn(self.__parse_bb, bb, dtype = (tf.float32,tf.float32,tf.float32,tf.float32,tf.float32))
+        bb = tf.map_fn(self.__parse_bb, bb, dtype=(tf.float32, tf.float32, tf.float32, tf.float32, tf.float32))
 
         grid_x = tf.floor(tf.multiply(bb[0], tf.constant(conv_width, dtype=tf.float32)))
         grid_y = tf.floor(tf.multiply(bb[1], tf.constant(conv_height, dtype=tf.float32)))
@@ -133,14 +133,30 @@ class Dataset(object):
 
         condition = tf.less(tf.constant(0.5), iou_max)
         non_zeros = tf.where(condition)
-	non_zeros = tf.squeeze(non_zeros)
+        non_zeros = tf.squeeze(non_zeros)
         iou_argmax = tf.cast(iou_argmax, tf.float32)
 
         iou_stack = tf.stack([tf.cast(grid_x, tf.int32), tf.cast(grid_y,tf.int32), tf.cast(iou_argmax, tf.int32)], axis=1)
         iou_stack = tf.gather(iou_stack,non_zeros, axis = 0)
 
-        updates = tf.ones(shape=(tf.shape(iou_stack)[0]))
+        iou_stack = tf.stack([tf.cast(grid_x, tf.int32), tf.cast(grid_y,tf.int32), tf.cast(iou_argmax, tf.int32)], axis=1)
+        iou_stack = tf.gather(iou_stack,non_zeros, axis = 0)
 
+        # bb_x = tf.gather(bb[0], non_zeros, axis = 0)
+        # bb_y = tf.gather(bb[1], non_zeros, axis = 0)
+        bb_stack = tf.stack([bb[0],bb[1], bb[2], bb[3]], axis = 1)
+        bb_stack = tf.gather(bb_stack, non_zeros, axis=1)
+
+        iou_max = tf.gather(iou_max, non_zeros, axis=0)
+        grid_x = tf.gather(grid_x, non_zeros, axis=0)
+        grid_y = tf.gather(grid_y, non_zeros, axis=0)
+        updates = tf.ones(shape=(tf.shape(iou_stack)[0]))
         shape = tf.constant([conv_height, conv_width,num_anchors])
-	mask = tf.scatter_nd(iou_stack,updates, shape)
-	return bb_hw,  anchors_hw, iou, iou_stack, mask
+        detector_mask = tf.scatter_nd(iou_stack, updates, shape)
+
+        grid_x_offset = bb_stack[:,0] - grid_x
+        grid_y_offset = bb[:,1] - grid_y
+        log1 = tf.log(bb[:,2] / iou_max[:,0])
+        log2 = tf.log(bb[:,3] / iou_max[:,1])
+
+        return bb_stack, grid_x_offset, grid_y_offset, log1, log2
