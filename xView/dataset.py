@@ -81,7 +81,7 @@ class Dataset(object):
 
         parsed = tf.parse_single_example(example, features=read_features)
 
-        img = tf.image.decode_image(parsed['image/encoded'])
+        img = tf.image.decode_jpeg(parsed['image/encoded'])
         width = parsed['image/width']
         height = parsed['image/height']
         format = parsed['image/format']
@@ -100,9 +100,9 @@ class Dataset(object):
         num_anchors = len(self._anchors)
         detector_mask =tf.zeros([conv_height,conv_width, num_anchors, 1], dtype=tf.float32)
         matching_true_boxes = tf.zeros([conv_height,conv_width,num_anchors, num_box_params])
-        img = tf.reshape(img,[self._height,self._width,3])
+        #img = img.set_shape([height,width,3])
         img = tf.image.resize_images(img, size = [self._height,self._width])
-
+	img = tf.image.convert_image_dtype(img,dtype = tf.float32)
 
         bb = tf.map_fn(self.__parse_bb, bb, dtype = (tf.float32,tf.float32,tf.float32,tf.float32,tf.float32))
 
@@ -131,7 +131,7 @@ class Dataset(object):
         iou_max = tf.reduce_max(iou, axis=[1])
         iou_argmax = tf.argmax(iou, dimension=1)
 
-        condition = tf.less(tf.constant(0, dtype=tf.float32), iou_max)
+        condition = tf.less(tf.constant(0.), iou_max)
         non_zeros = tf.where(condition)
 
         iou_argmax = tf.cast(iou_argmax, tf.float32)
@@ -139,8 +139,11 @@ class Dataset(object):
         iou_stack = tf.stack([tf.cast(grid_x, tf.int64), tf.cast(grid_y,tf.int64), tf.cast(iou_argmax, tf.int64)], axis=1)
         iou_stack = tf.gather(iou_stack,non_zeros, axis = 0)
 
-        updates = tf.ones(shape=(tf.shape(grid_x)[0]))
+        #updates = tf.ones(shape=(tf.shape(grid_x)[0]))
 
-        shape = tf.constant([self._s, self._s, tf.shape(anchors)[0]])
-
-        return bb_hw,  anchors_hw, iou
+        #shape = tf.constant([self._s, self._s, tf.shape(anchors)[0]])
+	img = tf.expand_dims(img, axis=0)
+	stack = tf.stack([bb_ymin, bb_xmin, bb_ymax, bb_xmax])
+	stack = tf.expand_dims(stack, axis =0) 
+	image_bb = tf.image.draw_bounding_boxes(img, stack)	
+        return bb_hw,  anchors_hw, iou, condition, iou_stack, image_bb
