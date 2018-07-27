@@ -134,20 +134,19 @@ class Dataset(object):
         condition = tf.less(tf.constant(0.5), iou_max)
         non_zeros = tf.where(condition)
         non_zeros = tf.squeeze(non_zeros)
-        iou_argmax = tf.cast(iou_argmax, tf.float32)
-
-        iou_stack = tf.stack([tf.cast(grid_x, tf.int32), tf.cast(grid_y,tf.int32), tf.cast(iou_argmax, tf.int32)], axis=1)
-        iou_stack = tf.gather(iou_stack,non_zeros, axis = 0)
 
         iou_stack = tf.stack([tf.cast(grid_x, tf.int32), tf.cast(grid_y,tf.int32), tf.cast(iou_argmax, tf.int32)], axis=1)
         iou_stack = tf.gather(iou_stack,non_zeros, axis = 0)
 
         # bb_x = tf.gather(bb[0], non_zeros, axis = 0)
         # bb_y = tf.gather(bb[1], non_zeros, axis = 0)
-        bb_stack = tf.stack([bb[0],bb[1], bb[2], bb[3]], axis = 1)
-        bb_stack = tf.gather(bb_stack, non_zeros, axis=1)
+        bb_stack = tf.stack([bb[0],bb[1], bb[2], bb[3],bb[4]], axis = 1)
+        bb_stack = tf.gather(bb_stack, non_zeros, axis=0)
 
-        iou_max = tf.gather(iou_max, non_zeros, axis=0)
+
+        iou_argmax = tf.gather(iou_argmax, non_zeros, axis=0)
+	bb_anchors = tf.gather(anchors, iou_argmax, axis=0)
+
         grid_x = tf.gather(grid_x, non_zeros, axis=0)
         grid_y = tf.gather(grid_y, non_zeros, axis=0)
         updates = tf.ones(shape=(tf.shape(iou_stack)[0]))
@@ -155,8 +154,11 @@ class Dataset(object):
         detector_mask = tf.scatter_nd(iou_stack, updates, shape)
 
         grid_x_offset = bb_stack[:,0] - grid_x
-        grid_y_offset = bb[:,1] - grid_y
-        log1 = tf.log(bb[:,2] / iou_max[:,0])
-        log2 = tf.log(bb[:,3] / iou_max[:,1])
+        grid_y_offset = bb_stack[:,1] - grid_y
+        log1 = tf.log(bb_stack[:,2] / bb_anchors[:,0])
+        log2 = tf.log(bb_stack[:,3] / bb_anchors[:,1])
 
-        return bb_stack, grid_x_offset, grid_y_offset, log1, log2
+	adjusted_box = tf.stack([grid_x_offset,grid_y_offset,log1,log2,	bb_stack[:,4]],axis = 1)
+	shape = tf.constant([conv_height, conv_width, num_anchors, 5])
+	matching_true_boxes = tf.scatter_nd(iou_stack, adjusted_box,shape)
+        return iou_stack, matching_true_boxes 
