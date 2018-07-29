@@ -29,11 +29,11 @@ class Dataset(object):
         self._b = b
         with open(self.anchor_path, 'r') as f:
             self._anchors = ast.literal_eval(f.read())
-       # self.dataset = self.dataset.shuffle(self._shuffle)
+        self.dataset = self.dataset.shuffle(self._shuffle)
         self.dataset = self.dataset.map(self.__input_parser, num_parallel_calls=num_parallel_calls)
 
-        # self.dataset = self.dataset.padded_batch(self._batch_size, padded_shapes= [None,None,None])
-        # self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
+        self.dataset = self.dataset.padded_batch(self._batch_size, padded_shapes= [None,None,None])
+        self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
         # self.dataset = self.dataset.repeat(self._num_epochs)
         # self._iterator = tf.data.Iterator.from_structure(self.dataset.output_types,
         #                                                        self.dataset.output_shapes)
@@ -47,7 +47,7 @@ class Dataset(object):
         # return self._iterator.make_initializer(self.dataset)
         return self._iterator.initializer
 
-    def __parse_bb(self,tensor):
+    def __parse_bb(self, tensor):
         xmin = tensor[0]
         xmax = tensor[1]
         ymin = tensor[2]
@@ -57,16 +57,36 @@ class Dataset(object):
         width = tf.subtract(xmax, xmin)
         height = tf.subtract(ymax, ymin)
 
-        x_center = tf.add(xmin, tf.divide(width,tf.constant(2,dtype=tf.float32)))
-        y_center = tf.add(ymin, tf.divide(height,tf.constant(2, dtype=tf.float32)))
-
-
-
+        x_center = tf.add(xmin, tf.divide(width, tf.constant(2, dtype=tf.float32)))
+        y_center = tf.add(ymin, tf.divide(height, tf.constant(2, dtype=tf.float32)))
 
         return x_center, y_center, height, width, box_class
 
+    def calcolate_iou_with_anchors(self, bb, anchors):
 
 
+        #let bb and anchor have the same dimension: [bb, ab, h, w]
+        bb_hw = tf.stack([bb[2], bb[3]], axis=1)
+        anchors_hw = tf.tile(tf.expand_dims(anchors, axis=0), [tf.shape(bb_hw)[0], 1, 1])
+        bb_hw = tf.tile(tf.expand_dims(bb_hw, axis=1), [1, tf.shape(anchors)[0], 1])
+
+        box_maxes = bb_hw / 2.
+        box_mins = -box_maxes
+        anchor_maxes = (anchors_hw / 2.)
+        anchor_mins = -anchor_maxes
+
+        intersect_mins = tf.maximum(box_mins, anchor_mins)
+        intersect_maxes = tf.minimum(box_maxes, anchor_maxes)
+        intersect_wh = tf.maximum(intersect_maxes - intersect_mins, 0.)
+        intersect_area = intersect_wh[:, :, 0] * intersect_wh[:, :, 1]
+        box_area = bb_hw[:, :, 0] * bb_hw[:, :, 1]
+        anchor_area = anchors_hw[:, :, 0] * anchors_hw[:, :, 1]
+        iou = intersect_area / (box_area + anchor_area - intersect_area)
+
+        iou_max = tf.reduce_max(iou, axis=[1])
+        iou_argmax = tf.argmax(iou, dimension=1)
+
+        return iou_max, iou_argmax
     def __input_parser(self, example):
         read_features = {
             'image/height': tf.FixedLenFeature((), dtype=tf.int64),
@@ -92,73 +112,51 @@ class Dataset(object):
         label = tf.sparse_tensor_to_dense(parsed['image/object/class/label'])
         label = tf.cast(label, tf.float32)
 
-        bb = tf.stack([bb_xmin,bb_xmax,bb_ymin,bb_ymax, label], axis = 1)
+        anchors = tf.convert_to_tensor(self._anchors, dtype=tf.float32)
 
         conv_height = self._height // 32
         conv_width = self._width // 32
         num_box_params = bb.get_shape()[1]
         num_anchors = len(self._anchors)
-        detector_mask =tf.zeros([conv_height,conv_width, num_anchors, 1], dtype=tf.float32)
-        matching_true_boxes = tf.zeros([conv_height,conv_width,num_anchors, num_box_params])
-        #img = img.set_shape([height,width,3])
-        img = tf.image.resize_images(img, size = [self._height,self._width])
         img = tf.image.convert_image_dtype(img, dtype=tf.float32)
+        img = tf.image.resize_images(img, size=[self._height, self._width])
 
+        #bb = [x_center, y_center, height, width, box_class]
+        bb = tf.stack([bb_xmin, bb_xmax, bb_ymin, bb_ymax, label], axis=1)
         bb = tf.map_fn(self.__parse_bb, bb, dtype=(tf.float32, tf.float32, tf.float32, tf.float32, tf.float32))
 
+        #x and y coordinates of the grid
         grid_x = tf.floor(tf.multiply(bb[0], tf.constant(conv_width, dtype=tf.float32)))
         grid_y = tf.floor(tf.multiply(bb[1], tf.constant(conv_height, dtype=tf.float32)))
 
-        bb_hw = tf.stack([bb[2], bb[3]], axis = 1) #num_bb, h, w
-        anchors = tf.convert_to_tensor(self._anchors, dtype=tf.float32) #num_anchor, h, w
-        anchors_hw = tf.tile(tf.expand_dims(anchors , axis=0),[tf.shape(bb_hw)[0], 1, 1])
-        bb_hw = tf.tile(tf.expand_dims(bb_hw, axis = 1), [1, tf.shape(anchors)[0], 1])
+        iou_max, iou_argmax = self.calcolate_iou_with_anchors(bb, anchors)
 
-
-        box_maxes = bb_hw / 2.
-        box_mins = -box_maxes
-        anchor_maxes = (anchors_hw / 2.)
-        anchor_mins = -anchor_maxes
-
-        intersect_mins = tf.maximum(box_mins, anchor_mins)
-        intersect_maxes = tf.minimum(box_maxes, anchor_maxes)
-        intersect_wh = tf.maximum(intersect_maxes - intersect_mins, 0.)
-        intersect_area = intersect_wh[:,:,0] * intersect_wh[:,:,1]
-        box_area = bb_hw[:,:,0]*bb_hw[:,:,1]
-        anchor_area = anchors_hw[:,:,0] * anchors_hw[:,:,1]
-        iou = intersect_area / (box_area + anchor_area - intersect_area)
-
-        iou_max = tf.reduce_max(iou, axis=[1])
-        iou_argmax = tf.argmax(iou, dimension=1)
-
-        condition = tf.less(tf.constant(0.5), iou_max)
-        non_zeros = tf.where(condition)
+        #Check where iou_max <= 0, if yes exclude it
+        non_zeros = tf.where(tf.less(tf.constant(0.), iou_max))
         non_zeros = tf.squeeze(non_zeros)
-
-        iou_stack = tf.stack([tf.cast(grid_x, tf.int32), tf.cast(grid_y,tf.int32), tf.cast(iou_argmax, tf.int32)], axis=1)
-        iou_stack = tf.gather(iou_stack,non_zeros, axis = 0)
-
-        # bb_x = tf.gather(bb[0], non_zeros, axis = 0)
-        # bb_y = tf.gather(bb[1], non_zeros, axis = 0)
-        bb_stack = tf.stack([bb[0],bb[1], bb[2], bb[3],bb[4]], axis = 1)
+        iou_stack = tf.stack([tf.cast(grid_x, tf.int32), tf.cast(grid_y, tf.int32), tf.cast(iou_argmax, tf.int32)],axis=1)
+        iou_stack = tf.gather(iou_stack, non_zeros, axis=0)
+        bb_stack = tf.stack([bb[0], bb[1], bb[2], bb[3], bb[4]], axis=1)
         bb_stack = tf.gather(bb_stack, non_zeros, axis=0)
-
-
         iou_argmax = tf.gather(iou_argmax, non_zeros, axis=0)
-	bb_anchors = tf.gather(anchors, iou_argmax, axis=0)
-
         grid_x = tf.gather(grid_x, non_zeros, axis=0)
         grid_y = tf.gather(grid_y, non_zeros, axis=0)
-        updates = tf.ones(shape=(tf.shape(iou_stack)[0]))
-        shape = tf.constant([conv_height, conv_width,num_anchors])
-        detector_mask = tf.scatter_nd(iou_stack, updates, shape)
 
-        grid_x_offset = bb_stack[:,0] - grid_x
-        grid_y_offset = bb_stack[:,1] - grid_y
-        log1 = tf.log(bb_stack[:,2] / bb_anchors[:,0])
-        log2 = tf.log(bb_stack[:,3] / bb_anchors[:,1])
+        #bb_bestanchor = [bb, bestAnchor]
+        bb_bestanchor = tf.gather(anchors, iou_argmax, axis=0)
+        grid_x_offset = bb_stack[:, 0] - grid_x
+        grid_y_offset = bb_stack[:, 1] - grid_y
+        hlog = tf.log(bb_stack[:, 2] / bb_bestanchor[:, 0])
+        wlog = tf.log(bb_stack[:, 3] / bb_bestanchor[:, 1])
+        adjusted_box = tf.stack([grid_x_offset, grid_y_offset, hlog, wlog, bb_stack[:, 4]], axis=1)
+        true_boxes_shape = tf.constant([conv_height, conv_width, num_anchors, 5])
+        matching_true_boxes = tf.scatter_nd(iou_stack, adjusted_box, true_boxes_shape)
 
-	adjusted_box = tf.stack([grid_x_offset,grid_y_offset,log1,log2,	bb_stack[:,4]],axis = 1)
-	shape = tf.constant([conv_height, conv_width, num_anchors, 5])
-	matching_true_boxes = tf.scatter_nd(iou_stack, adjusted_box,shape)
-        return iou_stack, matching_true_boxes 
+        detector_mask_updates = tf.ones(shape=(tf.shape(iou_stack)[0]))
+        detector_mask_shape = tf.constant([conv_height, conv_width, num_anchors])
+        detector_mask = tf.scatter_nd(iou_stack, detector_mask_updates, detector_mask_shape)
+
+        return img,bb_stack, detector_mask, matching_true_boxes
+
+
+
