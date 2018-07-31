@@ -30,21 +30,18 @@ class Dataset(object):
         with open(self.anchor_path, 'r') as f:
             self._anchors = ast.literal_eval(f.read())
         self.dataset = self.dataset.shuffle(self._shuffle)
-        self.dataset = self.dataset.map(self.__input_parser, num_parallel_calls=num_parallel_calls)
-
-        self.dataset = self.dataset.padded_batch(self._batch_size, padded_shapes= [None,None,None])
-        self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
-        # self.dataset = self.dataset.repeat(self._num_epochs)
-        # self._iterator = tf.data.Iterator.from_structure(self.dataset.output_types,
+        self.dataset = self.dataset.map(self.__input_parser)
+	self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
+        #self.dataset = self.dataset.repeat(self._num_epochs)
+        #self._iterator = tf.data.Iterator.from_structure(self.dataset.output_types,
         #                                                        self.dataset.output_shapes)
-
-        self._iterator = self.dataset.make_initializable_iterator()
+        self._iterator = self.dataset.make_one_shot_iterator()
 
     def get_next(self):
         return self._iterator.get_next()
 
     def init(self):
-        # return self._iterator.make_initializer(self.dataset)
+        #return self._iterator.make_initializer(self.dataset)
         return self._iterator.initializer
 
     def __parse_bb(self, tensor):
@@ -101,7 +98,7 @@ class Dataset(object):
 
         parsed = tf.parse_single_example(example, features=read_features)
 
-        img = tf.image.decode_jpeg(parsed['image/encoded'])
+        img = tf.image.decode_jpeg(parsed['image/encoded'], channels=3)
         width = parsed['image/width']
         height = parsed['image/height']
         format = parsed['image/format']
@@ -116,10 +113,9 @@ class Dataset(object):
 
         conv_height = self._height // 32
         conv_width = self._width // 32
-        num_box_params = bb.get_shape()[1]
         num_anchors = len(self._anchors)
         img = tf.image.convert_image_dtype(img, dtype=tf.float32)
-        img = tf.image.resize_images(img, size=[self._height, self._width])
+	img = tf.image.resize_images(img, size=[self._height, self._width])
 
         #bb = [x_center, y_center, height, width, box_class]
         bb = tf.stack([bb_xmin, bb_xmax, bb_ymin, bb_ymax, label], axis=1)
@@ -133,7 +129,7 @@ class Dataset(object):
 
         #Check where iou_max <= 0, if yes exclude it
         non_zeros = tf.where(tf.less(tf.constant(0.), iou_max))
-        non_zeros = tf.squeeze(non_zeros)
+        non_zeros = tf.squeeze(non_zeros,axis = -1)
         iou_stack = tf.stack([tf.cast(grid_x, tf.int32), tf.cast(grid_y, tf.int32), tf.cast(iou_argmax, tf.int32)],axis=1)
         iou_stack = tf.gather(iou_stack, non_zeros, axis=0)
         bb_stack = tf.stack([bb[0], bb[1], bb[2], bb[3], bb[4]], axis=1)
@@ -144,6 +140,7 @@ class Dataset(object):
 
         #bb_bestanchor = [bb, bestAnchor]
         bb_bestanchor = tf.gather(anchors, iou_argmax, axis=0)
+
         grid_x_offset = bb_stack[:, 0] - grid_x
         grid_y_offset = bb_stack[:, 1] - grid_y
         hlog = tf.log(bb_stack[:, 2] / bb_bestanchor[:, 0])
@@ -155,8 +152,7 @@ class Dataset(object):
         detector_mask_updates = tf.ones(shape=(tf.shape(iou_stack)[0]))
         detector_mask_shape = tf.constant([conv_height, conv_width, num_anchors])
         detector_mask = tf.scatter_nd(iou_stack, detector_mask_updates, detector_mask_shape)
-
-        return img,bb_stack, detector_mask, matching_true_boxes
+        return img, detector_mask, matching_true_boxes
 
 
 
