@@ -15,7 +15,7 @@ class Dataset(object):
     def __len__(self):
         return sum(1 for _ in tf.python_io.tf_record_iterator(self.path))
 
-    def build(self, num_class=10,
+    def build(self, num_class=62,
               height=416, width=416,
               batch_size=32, num_epochs=100,
               shuffle=1000000, num_parallel_calls=2, s=9, b=4):
@@ -31,9 +31,9 @@ class Dataset(object):
             self._anchors = ast.literal_eval(f.read())
         self.dataset = self.dataset.shuffle(self._shuffle)
         self.dataset = self.dataset.map(self.__input_parser)
-	self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
-        #self.dataset = self.dataset.repeat(self._num_epochs)
-        #self._iterator = tf.data.Iterator.from_structure(self.dataset.output_types,
+        self.dataset = self.dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._batch_size))
+        # self.dataset = self.dataset.repeat(self._num_epochs)
+        # self._iterator = tf.data.Iterator.from_structure(self.dataset.output_types,
         #                                                        self.dataset.output_shapes)
         self._iterator = self.dataset.make_one_shot_iterator()
 
@@ -41,7 +41,7 @@ class Dataset(object):
         return self._iterator.get_next()
 
     def init(self):
-        #return self._iterator.make_initializer(self.dataset)
+        # return self._iterator.make_initializer(self.dataset)
         return self._iterator.initializer
 
     def __parse_bb(self, tensor):
@@ -60,9 +60,7 @@ class Dataset(object):
         return x_center, y_center, height, width, box_class
 
     def calcolate_iou_with_anchors(self, bb, anchors):
-
-
-        #let bb and anchor have the same dimension: [bb, ab, h, w]
+        # let bb and anchor have the same dimension: [bb, ab, h, w]
         bb_hw = tf.stack([bb[2], bb[3]], axis=1)
         anchors_hw = tf.tile(tf.expand_dims(anchors, axis=0), [tf.shape(bb_hw)[0], 1, 1])
         bb_hw = tf.tile(tf.expand_dims(bb_hw, axis=1), [1, tf.shape(anchors)[0], 1])
@@ -84,6 +82,7 @@ class Dataset(object):
         iou_argmax = tf.argmax(iou, dimension=1)
 
         return iou_max, iou_argmax
+
     def __input_parser(self, example):
         read_features = {
             'image/height': tf.FixedLenFeature((), dtype=tf.int64),
@@ -115,44 +114,39 @@ class Dataset(object):
         conv_width = self._width // 32
         num_anchors = len(self._anchors)
         img = tf.image.convert_image_dtype(img, dtype=tf.float32)
-	img = tf.image.resize_images(img, size=[self._height, self._width])
+        img = tf.image.resize_images(img, size=[self._height, self._width])
 
-        #bb = [x_center, y_center, height, width, box_class]
+        # bb = [x_center, y_center, height, width, box_class]
         bb = tf.stack([bb_xmin, bb_xmax, bb_ymin, bb_ymax, label], axis=1)
         bb = tf.map_fn(self.__parse_bb, bb, dtype=(tf.float32, tf.float32, tf.float32, tf.float32, tf.float32))
 
-        #x and y coordinates of the grid
+        # x and y coordinates of the grid
         grid_x = tf.floor(tf.multiply(bb[0], tf.constant(conv_width, dtype=tf.float32)))
         grid_y = tf.floor(tf.multiply(bb[1], tf.constant(conv_height, dtype=tf.float32)))
 
         iou_max, iou_argmax = self.calcolate_iou_with_anchors(bb, anchors)
 
-        #Check where iou_max <= 0, if yes exclude it
+        # Check where iou_max <= 0, if yes exclude it
         non_zeros = tf.where(tf.less(tf.constant(0.), iou_max))
-        non_zeros = tf.squeeze(non_zeros,axis = -1)
-        iou_stack = tf.stack([tf.cast(grid_x, tf.int32), tf.cast(grid_y, tf.int32), tf.cast(iou_argmax, tf.int32)],axis=1)
+        non_zeros = tf.squeeze(non_zeros, axis=-1)
+        iou_stack = tf.stack([tf.cast(grid_x, tf.int32), tf.cast(grid_y, tf.int32), tf.cast(iou_argmax, tf.int32)],
+                             axis=1)
         iou_stack = tf.gather(iou_stack, non_zeros, axis=0)
         bb_stack = tf.stack([bb[0], bb[1], bb[2], bb[3], bb[4]], axis=1)
         bb_stack = tf.gather(bb_stack, non_zeros, axis=0)
-        iou_argmax = tf.gather(iou_argmax, non_zeros, axis=0)
-        grid_x = tf.gather(grid_x, non_zeros, axis=0)
-        grid_y = tf.gather(grid_y, non_zeros, axis=0)
 
-        #bb_bestanchor = [bb, bestAnchor]
-        bb_bestanchor = tf.gather(anchors, iou_argmax, axis=0)
+        x_center = bb_stack[:, 0]
+        y_center = bb_stack[:, 1]
+        h_center = bb_stack[:, 2]
+        w_center = bb_stack[:, 3]
 
-        grid_x_offset = bb_stack[:, 0] - grid_x
-        grid_y_offset = bb_stack[:, 1] - grid_y
-        hlog = tf.log(bb_stack[:, 2] / bb_bestanchor[:, 0])
-        wlog = tf.log(bb_stack[:, 3] / bb_bestanchor[:, 1])
-        adjusted_box = tf.stack([grid_x_offset, grid_y_offset, hlog, wlog, bb_stack[:, 4]], axis=1)
-        true_boxes_shape = tf.constant([conv_height, conv_width, num_anchors, 5])
+        label_ohe = tf.one_hot(bb_stack[:,4], self._num_class)
+
+        adjusted_box = tf.stack([x_center,y_center,h_center,w_center, tf.ones(tf.shape(label_ohe)[0], label_ohe)], axis=1)
+        true_boxes_shape = tf.constant([conv_height, conv_width, num_anchors, 5 + self._num_class])
         matching_true_boxes = tf.scatter_nd(iou_stack, adjusted_box, true_boxes_shape)
 
         detector_mask_updates = tf.ones(shape=(tf.shape(iou_stack)[0]))
         detector_mask_shape = tf.constant([conv_height, conv_width, num_anchors])
         detector_mask = tf.scatter_nd(iou_stack, detector_mask_updates, detector_mask_shape)
         return img, detector_mask, matching_true_boxes
-
-
-
