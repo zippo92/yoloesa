@@ -178,10 +178,10 @@ class Yolo2():
             box_xy = (box_xy + conv_index) / conv_dims
             box_wh = box_wh * anchors / conv_dims
 
-            x[..., :2] =  box_xy
-            x[..., 2:4] = box_wh
-            x[..., 4] = box_confidence
-            x[..., 5:] = box_class_probs
+            # x[..., :2] =  box_xy
+            # x[..., 2:4] = box_wh
+            # x[..., 4] = box_confidence
+            # x[..., 5:] = box_class_probs
 
             return x
 
