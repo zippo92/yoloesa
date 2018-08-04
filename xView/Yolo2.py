@@ -1,11 +1,16 @@
 import tensorflow as tf
-
+import ast
 
 class Yolo2():
 
-    def __init__(self):
-        self.lambda_coord = 5
-        self.lambda_noobj = 0.5
+    def __init__(self, anchor_path, num_class = 62, lambda_coord = 5, lambda_noobj = 0.5):
+        self._lambda_coord = lambda_coord
+        self._lambda_noobj = lambda_noobj
+        self._num_class = num_class
+
+        with open(anchor_path, 'r') as f:
+            self._anchors = ast.literal_eval(f.read())
+
     def inference(self, images, reuse = False):
 
         with tf.variable_scope('yolo', reuse = reuse):
@@ -122,6 +127,8 @@ class Yolo2():
             predicts = self.batch_normalization(input=predicts)
             predicts = self.leaky_relu(predicts, 0.1)
 
+            predicts = self.conv2d(input = predicts, kernel_size=1, filters=(len(self._anchors) * (5 + self._num_class)), stride=1)
+
             output = self.convert_to_bbox(predicts)
 
             return output
@@ -140,8 +147,8 @@ class Yolo2():
             Probability distribution estimate for each box over class labels.
         """
         with tf.variable_scope('convert_to_bbox'):
-            num_anchors = self.anchors.shape[0]
-            anchors = tf.keras.backend.variable(self.anchors)
+            num_anchors = self._anchors.shape[0]
+            anchors = tf.keras.backend.variable(self._anchors)
             # Reshape to batch, height, width, num_anchors, box_params.
             anchors = tf.reshape(anchors, [1, 1, 1, num_anchors, 2])
 
@@ -160,7 +167,7 @@ class Yolo2():
             conv_index = tf.cast(conv_index, x.dtype)
 
             x = tf.reshape(
-                x, [-1, conv_dims[0], conv_dims[1], num_anchors, self.num_classes + 5])
+                x, [-1, conv_dims[0], conv_dims[1], num_anchors, self._num_class + 5])
             conv_dims = tf.cast(tf.reshape(conv_dims, [1, 1, 1, 1, 2]), x.dtype)
 
             box_xy = tf.sigmoid(x[..., :2])
@@ -291,7 +298,7 @@ class Yolo2():
         loss_class = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class, logits=predicts[...,5:])
         loss_class = tf.reduce_sum(loss_class * class_mask) / (nb_class_box)
 
-        loss = self.lambda_coord *(loss_x + loss_y + loss_h + loss_w + loss_conf) + self.lambda_noobj * loss_noobj_conf + loss_class
+        loss = self._lambda_coord *(loss_x + loss_y + loss_h + loss_w + loss_conf) + self._lambda_noobj * loss_noobj_conf + loss_class
 
         return loss
 
