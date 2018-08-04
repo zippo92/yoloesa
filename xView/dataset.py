@@ -139,11 +139,12 @@ class Dataset(object):
         y_center = bb_stack[:, 1]
         h_center = bb_stack[:, 2]
         w_center = bb_stack[:, 3]
+	label = tf.cast(bb_stack[:,4],tf.int32)
+	label_ohe = tf.one_hot(label, self._num_class)
 
-        label_ohe = tf.one_hot(bb_stack[:,4], self._num_class)
-
-        adjusted_box = tf.stack([x_center,y_center,h_center,w_center, tf.ones(tf.shape(label_ohe)[0], label_ohe)], axis=1)
-        true_boxes_shape = tf.constant([conv_height, conv_width, num_anchors, 5 + self._num_class])
+	adjusted_box = tf.stack([x_center,y_center,h_center,w_center],axis=1)
+	adjusted_box = tf.concat([adjusted_box,tf.ones([tf.shape(iou_stack)[0],1]),label_ohe], axis = 1)
+        true_boxes_shape = tf.constant([conv_height, conv_width, num_anchors, 4+1+self._num_class])
         matching_true_boxes = tf.scatter_nd(iou_stack, adjusted_box, true_boxes_shape)
 
         detector_mask_updates = tf.ones(shape=(tf.shape(iou_stack)[0]))
