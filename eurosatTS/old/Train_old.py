@@ -2,7 +2,7 @@ from eurosatTS.old.Dataset_old import Dataset
 import tensorflow as tf
 import ConfigParser
 
-from eurosatTS.Yolo import Yolo
+from eurosatTS.Net import Yolo
 
 
 class YoloSolver():

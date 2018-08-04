@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-class Yolo():
+class Net():
 
     def __init__(self):
         pass
@@ -43,9 +43,9 @@ class Yolo():
                     activation = config.get(layer, "activation")
                     predicts = self.dense(predicts, units, dropOutRate, activation)
 
-            logits = tf.nn.softmax(predicts)
+            # logits = tf.nn.softmax(predicts)
 
-            return predicts, logits
+            return predicts#, logits
 
 
     def conv2d(self, input, kernel_size,filters, stride):

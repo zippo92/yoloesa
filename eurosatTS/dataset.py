@@ -4,16 +4,17 @@ import tensorflow as tf
 import numpy as np
 import os
 
+
 class Dataset(object):
     def __init__(self, file_path):
-	self.path = file_path
+        self.path = file_path
         self.dataset = tf.data.TFRecordDataset(file_path)
 
     def __len__(self):
         return sum(1 for _ in tf.python_io.tf_record_iterator(self.path))
 
     def build(self, num_class=10,
-              height=256, width=256,
+              height=320, width=320,
               batch_size=32, num_epochs=100,
               shuffle=1000000, num_parallel_calls=2):
         self._num_class = num_class
@@ -36,7 +37,6 @@ class Dataset(object):
         return self._iterator.make_initializer(self.dataset)
 
     def __input_parser(self, example):
-
         read_features = {
             'image': tf.FixedLenFeature((), dtype=tf.string),
             'label': tf.FixedLenFeature((), dtype=tf.int64)}
@@ -46,10 +46,10 @@ class Dataset(object):
         img = tf.decode_raw(parsed['image'], tf.float32)
         label = parsed['label']
 
-        img = tf.reshape(img, [64, 64,3])
+        img = tf.reshape(img, [64, 64, 3])
 
-        img = tf.image.resize_images(img, [320, 320])
+        img = tf.image.resize_images(img, [self._height, self._width])
 
         label_ohe = tf.one_hot(label, 10)
 
-        return img,label, label_ohe
+        return img, label, label_ohe
