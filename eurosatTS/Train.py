@@ -72,7 +72,7 @@ class Train():
         train_summary = tf.summary.merge([train_loss_summ,train_acc_summ, train_f1score_summ])
 
         val_x, val_y, val_yohe = self.valDataset.get_next()
-        val_predict = self.net.inference(val_x, reuse = True)
+        val_predict = self.net.inference(val_x, dropout = False, reuse = True)
 
         val_loss = self.net.loss(val_predict, val_yohe)
 
@@ -123,7 +123,7 @@ class Train():
                     _val_f1_score = sess.run([val_f1score])
                     val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
                 trainWriter.add_summary(_train_summary,epoch)
-                valWriter.add_summary(_val_summary)
+                valWriter.add_summary(_val_summary, epoch)
 
                 if _val_acc_op > best_val_acc:
                     best_val_acc = _val_acc_op

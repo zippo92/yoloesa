@@ -5,17 +5,18 @@ class resNet():
 
     def __init__(self):
         pass
-    def inference(self, images, reuse = False):
 
-        with tf.variable_scope('yolo', reuse = reuse):
-            predicts = self.conv2d(images, filters=64, kernel_size=(7,7), stride=(2,2))
+    def inference(self, images, dropout = True, reuse=False):
+
+        with tf.variable_scope('yolo', reuse=reuse):
+            predicts = self.conv2d(images, filters=64, kernel_size=(7, 7), stride=(2, 2))
             predicts = self.batch_normalization(predicts)
-	    predicts = tf.nn.relu(predicts)	
-            predicts = self.max_pool(predicts,kernel_size=(3,3), strides=(2,2))
+            predicts = tf.nn.relu(predicts)
+            predicts = self.max_pool(predicts, kernel_size=(3, 3), strides=(2, 2))
 
-            predicts = self.conv_block(predicts,filters = [64, 64, 256], strides=(1, 1))
-            predicts = self.id_block(predicts, filters = [64, 64, 256])
-            predicts = self.id_block(predicts, filters = [64, 64, 256])
+            predicts = self.conv_block(predicts, filters=[64, 64, 256], strides=(1, 1))
+            predicts = self.id_block(predicts, filters=[64, 64, 256])
+            predicts = self.id_block(predicts, filters=[64, 64, 256])
 
             predicts = self.conv_block(predicts, filters=[128, 128, 512])
             predicts = self.id_block(predicts, filters=[128, 128, 512])
@@ -33,47 +34,46 @@ class resNet():
             predicts = self.id_block(predicts, filters=[512, 512, 2048])
             predicts = self.id_block(predicts, filters=[512, 512, 2048])
 
-            predicts = tf.layers.average_pooling2d(predicts,pool_size=(2,2), strides=(2,2))
-	   
-            predicts = self.dense(predicts,units = 1000, activation = "relu",training = reuse,dropout=True)
-            predicts = self.dense(predicts,units = 10, activation= "None", training = reuse, dropout = False)
+            predicts = tf.layers.average_pooling2d(predicts, pool_size=(2, 2), strides=(2, 2))
+
+            predicts = self.dense(predicts, units=1000, activation="relu", training=reuse, dropout=dropout)
+            predicts = self.dense(predicts, units=10, activation="None", training=reuse, dropout=dropout)
 
             return predicts
 
-    def conv_block(self,input,filters,strides=(2, 2)):
-        filters1, filters2, filters3 = filters
-        x = self.conv2d(input, kernel_size=(1,1), filters= filters1, stride=strides)
-        x = self.batch_normalization(x)
-        x = tf.nn.relu(x)
-        x = self.conv2d(x, kernel_size=(3,3), filters= filters2, stride=(1,1), padding = "same" )
-        x = self.batch_normalization(x)
-	x = tf.nn.relu(x)
-        x = self.conv2d(x, kernel_size=(1,1), filters=filters3, stride=(1,1))
-        x = self.batch_normalization(x)
-
-        shortcut = self.conv2d(input,kernel_size=(1,1),filters = filters3, stride = strides)
-        shortcut = self.batch_normalization(shortcut)
-
-        x+=shortcut
-
-        return tf.nn.relu(x)
-
-    def id_block(self,input,filters,strides=(1, 1)):
+    def conv_block(self, input, filters, strides=(2, 2)):
         filters1, filters2, filters3 = filters
         x = self.conv2d(input, kernel_size=(1, 1), filters=filters1, stride=strides)
         x = self.batch_normalization(x)
-	x = tf.nn.relu(x)
-        x = self.conv2d(x, kernel_size=(3, 3), filters=filters2, stride=strides, padding = "same")
+        x = tf.nn.relu(x)
+        x = self.conv2d(x, kernel_size=(3, 3), filters=filters2, stride=(1, 1), padding="same")
         x = self.batch_normalization(x)
-	x = tf.nn.relu(x)
+        x = tf.nn.relu(x)
+        x = self.conv2d(x, kernel_size=(1, 1), filters=filters3, stride=(1, 1))
+        x = self.batch_normalization(x)
+
+        shortcut = self.conv2d(input, kernel_size=(1, 1), filters=filters3, stride=strides)
+        shortcut = self.batch_normalization(shortcut)
+
+        x += shortcut
+
+        return tf.nn.relu(x)
+
+    def id_block(self, input, filters, strides=(1, 1)):
+        filters1, filters2, filters3 = filters
+        x = self.conv2d(input, kernel_size=(1, 1), filters=filters1, stride=strides)
+        x = self.batch_normalization(x)
+        x = tf.nn.relu(x)
+        x = self.conv2d(x, kernel_size=(3, 3), filters=filters2, stride=strides, padding="same")
+        x = self.batch_normalization(x)
+        x = tf.nn.relu(x)
         x = self.conv2d(x, kernel_size=(1, 1), filters=filters3, stride=strides)
         x = self.batch_normalization(x)
 
         x += input
         return tf.nn.relu(x)
 
-    def conv2d(self, input, kernel_size,filters, stride, padding = "valid"):
-
+    def conv2d(self, input, kernel_size, filters, stride, padding="valid"):
 
         """convolutional layer
         Args:
@@ -89,7 +89,7 @@ class resNet():
             filters=filters,
             kernel_size=kernel_size,
             padding=padding,
-            strides = stride,
+            strides=stride,
         )
 
         return conv1
@@ -105,21 +105,19 @@ class resNet():
         """
         return tf.layers.max_pooling2d(inputs=input, pool_size=kernel_size, strides=strides)
 
-    def dense(self, input, units, activation,training, dropout = False):
-
+    def dense(self, input, units, activation, training, dropout=False):
 
         shape = input.get_shape().as_list()
-        if(len(shape) == 4):
-            input = tf.reshape(input, [shape[0], shape[1]*shape[2]*shape[3]])
+        if (len(shape) == 4):
+            input = tf.reshape(input, [shape[0], shape[1] * shape[2] * shape[3]])
         if activation == "relu":
             dense = tf.layers.dense(inputs=input, units=units, activation=tf.nn.leaky_relu)
         else:
             dense = tf.layers.dense(inputs=input, units=units)
 
-	if dropout == True:
-        	dropout = tf.layers.dropout(inputs=dense, training=training)
+        if dropout == True:
+            dropout = tf.layers.dropout(inputs=dense, training=training)
         return dense
-
 
     def loss(self, predicts, labelsohe):
         return tf.losses.softmax_cross_entropy(onehot_labels=labelsohe, logits=predicts)
