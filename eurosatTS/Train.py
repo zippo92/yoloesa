@@ -115,13 +115,13 @@ class Train():
                 for step in xrange(self.train_batch_number):
                     _, _train_loss,_tr_acc,_tr_acc_op,_, _train_summary = sess.run([training_step,train_loss, train_acc, train_acc_stream, train_f1_prepstream,train_summary])
                     _train_f1_score = sess.run([train_f1score])
-                    train_progbar.update(step, [("tr_loss", _train_loss), ("tr_accuracy", _tr_acc_op), ("tr_f1_score", _train_f1_score)])
+                    train_progbar.update(step, [("tr_loss", _train_loss), ("tr_accuracy", _tr_acc_op)])
                 print("\nValidation start\n")
                 val_progbar = tf.keras.utils.Progbar(target=self.val_batch_number)
                 for step in xrange(self.val_batch_number):
                     _val_loss,_val_acc,_val_acc_op,_,_val_summary = sess.run([val_loss,val_acc, val_acc_op,val_f1_prepstream,val_summary])
                     _val_f1_score = sess.run([val_f1score])
-                    val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op),("val_f1_score", _val_f1_score)])
+                    val_progbar.update(step, [("val_loss", _val_loss), ("val_accuracy", _val_acc_op)])
                 trainWriter.add_summary(_train_summary,epoch)
                 valWriter.add_summary(_val_summary)
 
