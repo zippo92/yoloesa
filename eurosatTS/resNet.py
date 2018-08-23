@@ -1,3 +1,4 @@
+
 import tensorflow as tf
 
 
@@ -8,7 +9,7 @@ class resNet():
 
     def inference(self, images, dropout = True, reuse=False):
 
-        with tf.variable_scope('yolo', reuse=reuse):
+        with tf.variable_scope('resNet', reuse=reuse):
             predicts = self.conv2d(images, filters=64, kernel_size=(7, 7), stride=(2, 2))
             predicts = self.batch_normalization(predicts)
             predicts = tf.nn.relu(predicts)
@@ -17,7 +18,7 @@ class resNet():
             predicts = self.conv_block(predicts, filters=[64, 64, 256], strides=(1, 1))
             predicts = self.id_block(predicts, filters=[64, 64, 256])
             predicts = self.id_block(predicts, filters=[64, 64, 256])
-
+     
             predicts = self.conv_block(predicts, filters=[128, 128, 512])
             predicts = self.id_block(predicts, filters=[128, 128, 512])
             predicts = self.id_block(predicts, filters=[128, 128, 512])
@@ -34,10 +35,14 @@ class resNet():
             predicts = self.id_block(predicts, filters=[512, 512, 2048])
             predicts = self.id_block(predicts, filters=[512, 512, 2048])
 
-            predicts = tf.layers.average_pooling2d(predicts, pool_size=(2, 2), strides=(2, 2))
+            #predicts = tf.layers.average_pooling2d(predicts, pool_size=(2,2), strides=(2, 2))
+                
+            #predicts = self.dense(predicts, units=1000, activation="relu", training=reuse, dropout=dropout)
+	    if(dropout==True): 
+            	predicts = tf.layers.dropout(inputs=predicts, training=reuse,rate=0.8)
+            predicts = tf.layers.average_pooling2d(predicts, pool_size=(2,2), strides=(2, 2))
 
-            predicts = self.dense(predicts, units=1000, activation="relu", training=reuse, dropout=dropout)
-            predicts = self.dense(predicts, units=10, activation="None", training=reuse, dropout=dropout)
+            predicts = self.dense(predicts, units=10, activation="None", training=reuse, dropout= False)
 
             return predicts
 
@@ -116,7 +121,7 @@ class resNet():
             dense = tf.layers.dense(inputs=input, units=units)
 
         if dropout == True:
-            dropout = tf.layers.dropout(inputs=dense, training=training)
+            dense = tf.layers.dropout(inputs=dense, training=training, rate = 0.75)
         return dense
 
     def loss(self, predicts, labelsohe):

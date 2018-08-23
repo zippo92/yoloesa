@@ -5,13 +5,13 @@ class Net():
 
     def __init__(self):
         pass
-    def inference(self, images, reuse = False):
+    def inference(self, images,training = True,reuse = False):
         import ConfigParser
 
         config = ConfigParser.ConfigParser()
         config.read("config/vgg16.cfg")
         predicts = images
-        with tf.variable_scope('yolo', reuse = reuse):
+        with tf.variable_scope('vgg16', reuse = reuse):
             for layer in config.sections():
 
                 if layer.startswith("Conv"):
@@ -41,7 +41,7 @@ class Net():
                     units = int(config.get(layer, "units"))
                     dropOutRate = float(config.get(layer, "dropOutRate"))
                     activation = config.get(layer, "activation")
-                    predicts = self.dense(predicts, units, dropOutRate, activation)
+                    predicts = self.dense(predicts, units, dropOutRate, activation,training = training)
 
             # logits = tf.nn.softmax(predicts)
 
@@ -82,7 +82,7 @@ class Net():
         """
         return tf.layers.max_pooling2d(inputs=input, pool_size=kernel_size, strides=strides)
 
-    def dense(self, input, units, dropoutrate, activation):
+    def dense(self, input, units, dropoutrate, activation, training):
 
 
         shape = input.get_shape().as_list()
@@ -93,9 +93,7 @@ class Net():
         else:
             dense = tf.layers.dense(inputs=input, units=units)
 
-
-        # dropout = tf.layers.dropout(
-        #    inputs=dense, rate=dropoutrate, training=True)
+        dense = tf.layers.dropout(inputs=dense, rate=dropoutrate, training=training)
         return dense
 
 

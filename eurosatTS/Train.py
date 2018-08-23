@@ -26,7 +26,7 @@ class Train():
         self.train_dir = self.config.get("Common Params", "train_dir")
         self.max_iterations = int(self.config.get("Common Params", "max_iterations"))
         self.learning_rate =float(self.config.get("Common Params", "learning_rate"))
-
+	self.momentum = float(self.config.get("Common Params", "momentum"))
         self.trainDataset = Dataset(train_path)
         self.trainDataset.build(height=self.height, width=self.width, batch_size=self.batch_size, num_epochs=self.num_epoch,
                                 shuffle=self.shuffle, num_parallel_calls=4)
@@ -41,9 +41,9 @@ class Train():
         self.val_batch_number = len(self.valDataset)/self.batch_size
 
 
-        self.net = resNet()
+        self.net = Net()
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
-
+	#self.optimizer = tf.train.MomentumOptimizer(self.learning_rate,self.momentum)
     def solve(self):
         train_x, train_y, train_yohe = self.trainDataset.get_next()
         train_predict = self.net.inference(train_x)
@@ -72,7 +72,7 @@ class Train():
         train_summary = tf.summary.merge([train_loss_summ,train_acc_summ, train_f1score_summ])
 
         val_x, val_y, val_yohe = self.valDataset.get_next()
-        val_predict = self.net.inference(val_x, dropout = False, reuse = True)
+        val_predict = self.net.inference(val_x, training = False, reuse = True)
 
         val_loss = self.net.loss(val_predict, val_yohe)
 
@@ -116,7 +116,8 @@ class Train():
                     _, _train_loss,_tr_acc,_tr_acc_op,_, _train_summary = sess.run([training_step,train_loss, train_acc, train_acc_stream, train_f1_prepstream,train_summary])
                     _train_f1_score = sess.run([train_f1score])
                     train_progbar.update(step, [("tr_loss", _train_loss), ("tr_accuracy", _tr_acc_op)])
-                print("\nValidation start\n")
+                print("\nTrain acc: {}, Train acc stream:{}".format(_tr_acc, _tr_acc_op))
+		print("\nValidation start\n")
                 val_progbar = tf.keras.utils.Progbar(target=self.val_batch_number)
                 for step in xrange(self.val_batch_number):
                     _val_loss,_val_acc,_val_acc_op,_,_val_summary = sess.run([val_loss,val_acc, val_acc_op,val_f1_prepstream,val_summary])

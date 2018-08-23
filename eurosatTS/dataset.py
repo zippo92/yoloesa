@@ -14,7 +14,7 @@ class Dataset(object):
         return sum(1 for _ in tf.python_io.tf_record_iterator(self.path))
 
     def build(self, num_class=10,
-              height=320, width=320,
+              height=512, width=512,
               batch_size=32, num_epochs=100,
               shuffle=1000000, num_parallel_calls=2):
         self._num_class = num_class
@@ -49,7 +49,7 @@ class Dataset(object):
         img = tf.reshape(img, [64, 64, 3])
 
         img = tf.image.resize_images(img, [self._height, self._width])
-
+        img = tf.image.per_image_standardization(img)
         label_ohe = tf.one_hot(label, 10)
 
         return img, label, label_ohe
